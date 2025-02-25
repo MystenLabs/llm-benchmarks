@@ -19,8 +19,8 @@
 ### Clone the Repository:
 
 ```bash
-git clone https://github.com/yourusername/neuroman.sui.git
-cd neuroman.sui
+git clone https://github.com/MystenLabs/neuromansui.git
+cd neuromansui
 ```
 
 ### Create a Virtual Environment (Optional but Recommended):
@@ -78,7 +78,7 @@ The script will:
 ## Project Structure
 
 ```
-neuroman.sui/
+neuromansui/
 ├── .env                   # Environment variables (e.g., OpenAI API key)
 ├── neuromansui/           # Main package directory
 │   ├── main.py            # Main Python script implementing the evaluation pipeline
