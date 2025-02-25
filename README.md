@@ -5,7 +5,7 @@
 
 ## Overview
 
-`neuroman.sui` is a Python-based iterative evaluation pipeline that leverages OpenAI's GPT-4 to automatically generate and refine Sui Move smart contracts. The pipeline generates a contract from a given prompt, simulates a compilation step to capture errors, and then uses the compiler feedback to iteratively improve the contract until it meets a fixed specification.
+`neuroman.sui` is a Python-based iterative evaluation pipeline that leverages OpenAI's GPT-4 to automatically generate and refine Sui Move smart contracts. The pipeline generates a contract from a given prompt, attempts to compile it, and then uses the compiler feedback to iteratively improve the contract until either it compiles successfully or the maximum number of iterations is reached.
 
 ## Goals
 
