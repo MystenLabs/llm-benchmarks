@@ -3,32 +3,41 @@
 # Base prompt for generating new contracts
 base_contract:
   description: "Basic prompt for generating a Sui Move contract with token support"
+  system_prompt: "You are an expert Sui Move smart contract developer. Your task is to generate complete, compilable code only. Do not include explanations outside of code comments. When given compiler feedback, analyze the errors and output a revised version of the entire contract that fixes those issues."
   content: |
-    You are an expert in Sui Move smart contract development. Your task is to generate a complete, semantically correct Sui Move contract that meets the following specification:
+    Generate a complete, semantically correct Sui Move contract that meets the following specification:
 
     Create a simple Sui Move module that defines a basic token with the following features:
     - A custom token type
     - Functions to mint, burn, and transfer tokens
     - Proper access control for administrative functions
+    
+    Include helpful comments in your code to explain key concepts and design decisions.
 
 # NFT contract prompt
 nft_contract:
   description: "Prompt for generating an NFT contract in Sui Move"
+  system_prompt: "You are an expert Sui Move smart contract developer. Your task is to generate complete, compilable code only. Do not include explanations outside of code comments. When given compiler feedback, analyze the errors and output a revised version of the entire contract that fixes those issues."
   content: |
-    You are an expert in Sui Move smart contract development. Your task is to generate a complete, semantically correct Sui Move contract that implements an NFT collection with the following features:
+    Generate a complete, semantically correct Sui Move contract that implements an NFT collection with the following features:
     
     - A custom NFT type with metadata fields (name, description, image URL)
     - Minting functionality with proper access control
     - Transfer functionality
     - Ability to update metadata by the owner
+    
+    Include helpful comments in your code to explain key concepts and design decisions.
 
 # DeFi contract prompt  
 defi_contract:
   description: "Prompt for generating a DeFi contract in Sui Move"
+  system_prompt: "You are an expert Sui Move smart contract developer. Your task is to generate complete, compilable code only. Do not include explanations outside of code comments. When given compiler feedback, analyze the errors and output a revised version of the entire contract that fixes those issues."
   content: |
-    You are an expert in Sui Move smart contract development. Your task is to generate a complete, semantically correct Sui Move contract that implements a simple DeFi protocol with these features:
+    Generate a complete, semantically correct Sui Move contract that implements a simple DeFi protocol with these features:
     
     - A liquidity pool for two tokens
     - Functions for adding and removing liquidity
     - Swap functionality with a simple pricing formula
-    - Fee collection mechanism 
+    - Fee collection mechanism
+    
+    Include helpful comments in your code to explain key concepts and design decisions. 
