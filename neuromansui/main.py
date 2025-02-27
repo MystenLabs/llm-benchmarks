@@ -1538,6 +1538,12 @@ Examples:
         help="Name of the module to generate (default: my_module)"
     )
     input_group.add_argument(
+        "--prompts-dir",
+        type=str,
+        default="prompts",
+        help="Directory containing prompt files (overrides default prompts directory)",
+    )
+    input_group.add_argument(
         "--max-iterations",
         type=int,
         default=5,
@@ -1596,7 +1602,7 @@ Examples:
     
     args = parser.parse_args()
 
-    prompt_loader = PromptLoader()
+    prompt_loader = PromptLoader(prompts_dir=args.prompts_dir)
 
     if args.list:
         list_available_prompts(prompt_loader)

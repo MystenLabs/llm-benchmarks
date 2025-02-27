@@ -17,7 +17,7 @@ class PromptLoader:
     Utility class for loading prompts from YAML files.
     """
     
-    def __init__(self, prompts_dir: str = '/Users/kz/vcs/neuromansui/prompts'):
+    def __init__(self, prompts_dir: str = 'prompts'):
         """
         Initialize the PromptLoader with the directory containing prompt files.
         
