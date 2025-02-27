@@ -63,17 +63,45 @@ poetry run python neuromansui/main.py --list
 poetry run python neuromansui/main.py --prompt sui_move.base_contract
 ```
 
+### Generate a Contract and Save to File:
+
+```bash
+poetry run python neuromansui/main.py --prompt sui_move.base_contract --output contracts/my_contract.move
+```
+
+### Generate a Contract with Tests:
+
+```bash
+poetry run python neuromansui/main.py --prompt sui_move.base_contract --output contracts/my_contract.move --generate-tests
+```
+
+### Generate Contract with Custom Test File Path:
+
+```bash
+poetry run python neuromansui/main.py --prompt sui_move.base_contract --output contracts/my_contract.move --generate-tests --test-output contracts/tests/my_custom_test.move
+```
+
 ### Additional Options:
 
 ```bash
-poetry run python neuromansui/main.py --prompt sui_move.nft_contract --max-iterations 10
+poetry run python neuromansui/main.py --prompt sui_move.game_contract --max-iterations 10
 ```
 
 The script will:
 1. Generate an initial version of a Sui Move contract based on the selected prompt.
 2. Simulate the compilation process and output compiler feedback.
 3. Iteratively refine the contract code until it compiles successfully or reaches the maximum iterations.
-4. Print the final contract source code to the console.
+4. Display a progress bar and refinement metrics throughout the process.
+5. Print the final contract source code to the console and optionally save it to a file.
+
+## Available Contract Templates
+
+The following contract templates are available:
+
+- **sui_move.base_contract**: Basic token contract with mint, burn, and transfer functions
+- **sui_move.nft_contract**: NFT collection contract with metadata management
+- **sui_move.defi_contract**: Simple DeFi protocol with liquidity pools and swaps
+- **sui_move.game_contract**: Advanced GameFi contract with character attributes, items, and game mechanics
 
 ## Project Structure
 
@@ -108,5 +136,16 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+## Features
+
+- **Iterative Refinement**: Automatically refines contract code based on compiler feedback
+- **LLM Integration**: Uses OpenAI's LLM to generate and improve smart contract code
+- **Prompt Library**: Includes a collection of YAML-based prompts for different contract types
+- **Test Generation**: Automatically generates test files for the contracts
+- **Progress Tracking**: Visual progress indicators and metrics during refinement
+- **File Output**: Save contracts and tests to specified file paths
+- **Detailed Error Reporting**: Structured error reports with categorization and statistics
+- **Extensible Pipeline**: Easily customizable for additional evaluation metrics
 
 

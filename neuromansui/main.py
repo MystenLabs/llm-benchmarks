@@ -24,6 +24,7 @@ from neuromansui.prompt_loader import PromptLoader, collect_errors
 from rich.console import Console
 from rich.table import Table
 import re
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 def strip_ansi(text: str) -> str:
     """
@@ -267,7 +268,7 @@ def generate_contract(prompt: str, system_prompt: str = "You are an expert in Su
     return generated
 
 
-def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterations: int = 2) -> str:
+def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterations: int = 5) -> str:
     """
     Iteratively calls the LLM to refine the contract source code.
     
@@ -282,45 +283,93 @@ def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterat
     previous_stats = None
     feedback_text = "Initial run"
     contract_source = ""
+    
+    # Metrics to track
+    iterations_history = []
 
     if system_prompt is None:
         system_prompt = "You are an expert in Sui Move smart contract development."
 
-    for i in range(max_iterations):
-        console.print(f"[bold yellow]=== Iteration {i+1} ===[/bold yellow]")
-        full_prompt = base_prompt if i == 0 else f"{base_prompt}\n\nFeedback: {feedback_text}"
-        contract_source = generate_contract(full_prompt, system_prompt)
-        console.print("[bold cyan]Generated contract source:[/bold cyan]")
-        console.print(contract_source)
+    # Create a progress bar
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+    ) as progress:
+        task = progress.add_task("[cyan]Refining contract...", total=max_iterations)
+        
+        for i in range(max_iterations):
+            console.print(f"\n[bold yellow]=== Iteration {i+1}/{max_iterations} ===[/bold yellow]")
+            full_prompt = base_prompt if i == 0 else f"{base_prompt}\n\nFeedback: {feedback_text}"
+            contract_source = generate_contract(full_prompt, system_prompt)
+            
+            console.print("[bold cyan]Generated contract source:[/bold cyan]")
+            console.print(contract_source)
 
-        compiled_result = compile_contract(contract_source)
-        console.print("[bold magenta]Compiler Feedback:[/bold magenta]")
-        console.print(compiled_result.status_message, highlight=False, markup=True)
+            compiled_result = compile_contract(contract_source)
+            console.print("[bold magenta]Compiler Feedback:[/bold magenta]")
+            console.print(compiled_result.status_message, highlight=False, markup=True)
 
-        delta_str = ""
-        if previous_stats is not None and compiled_result.stats:
-            delta_errors = compiled_result.stats.get("errors", 0) - previous_stats.get("errors", 0)
-            delta_compiler = compiled_result.stats.get("compiler_warnings", 0) - previous_stats.get("compiler_warnings", 0)
-            delta_linter = compiled_result.stats.get("linter_warnings", 0) - previous_stats.get("linter_warnings", 0)
-            delta_str = (
-                f"[bold]Delta Changes:[/bold] Errors: [red]{delta_errors:+d}[/red] | "
-                f"Compiler Warnings: [yellow]{delta_compiler:+d}[/yellow] | "
-                f"Linter Warnings: [blue]{delta_linter:+d}[/blue]"
+            # Update iteration metrics
+            iteration_metrics = {
+                "iteration": i+1,
+                "errors": compiled_result.stats.get("errors", 0),
+                "compiler_warnings": compiled_result.stats.get("compiler_warnings", 0),
+                "linter_warnings": compiled_result.stats.get("linter_warnings", 0),
+                "success": compiled_result.is_successful
+            }
+            iterations_history.append(iteration_metrics)
+
+            delta_str = ""
+            if previous_stats is not None and compiled_result.stats:
+                delta_errors = compiled_result.stats.get("errors", 0) - previous_stats.get("errors", 0)
+                delta_compiler = compiled_result.stats.get("compiler_warnings", 0) - previous_stats.get("compiler_warnings", 0)
+                delta_linter = compiled_result.stats.get("linter_warnings", 0) - previous_stats.get("linter_warnings", 0)
+                delta_str = (
+                    f"[bold]Delta Changes:[/bold] Errors: [red]{delta_errors:+d}[/red] | "
+                    f"Compiler Warnings: [yellow]{delta_compiler:+d}[/yellow] | "
+                    f"Linter Warnings: [blue]{delta_linter:+d}[/blue]"
+                )
+                console.print(delta_str)
+            previous_stats = compiled_result.stats
+
+            # Update progress
+            progress.update(task, advance=1, description=f"[cyan]Iteration {i+1}/{max_iterations}")
+            
+            if compiled_result.is_successful:
+                console.print("[bold green]Contract compiled successfully![/bold green]")
+                break
+            else:
+                feedback_text = (
+                    f"The contract did not compile.\n\n{strip_ansi(compiled_result.feedback.verbose_output)}\n"
+                )
+                if delta_str:
+                    feedback_text += delta_str + "\n"
+                feedback_text += "Please revise the contract accordingly, ensuring that all issues are resolved."
+                time.sleep(1)
+    
+    # Print summary metrics
+    if iterations_history:
+        console.print("\n[bold blue]== Refinement Summary ==[/bold blue]")
+        
+        # Create a summary table
+        summary_table = Table(title="Refinement Metrics")
+        summary_table.add_column("Iteration", style="cyan")
+        summary_table.add_column("Errors", style="red")
+        summary_table.add_column("Warnings", style="yellow")
+        summary_table.add_column("Status", style="green")
+        
+        for metrics in iterations_history:
+            status = "[green]Success" if metrics["success"] else "[red]Failed"
+            summary_table.add_row(
+                str(metrics["iteration"]),
+                str(metrics["errors"]),
+                str(metrics["compiler_warnings"] + metrics["linter_warnings"]),
+                status
             )
-            console.print(delta_str)
-        previous_stats = compiled_result.stats
-
-        if compiled_result.is_successful:
-            console.print("[bold green]Contract compiled successfully![/bold green]")
-            break
-        else:
-            feedback_text = (
-                f"The contract did not compile.\n\n{strip_ansi(compiled_result.feedback.verbose_output)}\n"
-            )
-            if delta_str:
-                feedback_text += delta_str + "\n"
-            feedback_text += "Please revise the contract accordingly, ensuring that all issues are resolved."
-            time.sleep(1)
+        
+        console.print(summary_table)
 
     return contract_source
 
@@ -337,6 +386,45 @@ def list_available_prompts(prompt_loader: PromptLoader) -> None:
         description = prompt_loader.get_prompt_description(prompt_path)
         console.print(f"- [cyan]{prompt_path}[/cyan]: {description}")
     console.print()
+
+
+def generate_test_file(contract_source: str, system_prompt: str = "You are an expert in Sui Move smart contract development.") -> str:
+    """
+    Generate a test file for a given contract using OpenAI.
+    
+    Args:
+        contract_source: The source code of the contract to generate tests for
+        system_prompt: The system prompt to set the model's behavior
+        
+    Returns:
+        Generated test file content
+    """
+    console.print("[bold green]🧪 Generating test file for the contract...[/bold green]")
+    
+    prompt = f"""
+Given the following Sui Move contract:
+
+```
+{contract_source}
+```
+
+Generate a comprehensive test file for this contract that covers all key functionality. 
+Include tests for happy paths and edge cases.
+The test file should follow Sui Move testing best practices and be ready to run with the Sui test framework.
+Include helpful comments that explain what each test is checking.
+    """
+    
+    with console.status("[bold blue]Generating tests...[/bold blue]", spinner="dots"):
+        response = client.chat.completions.create(
+            model="o3-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+        )
+    generated = response.choices[0].message.content
+    console.print("[bold green]✅ Test file generation successful![/bold green]")
+    return generated
 
 
 def main():
@@ -360,6 +448,21 @@ def main():
         type=int,
         default=5,
         help="Maximum number of iterations for refinement",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Save the generated contract to this file path",
+    )
+    parser.add_argument(
+        "--generate-tests",
+        action="store_true",
+        help="Generate test file for the contract",
+    )
+    parser.add_argument(
+        "--test-output",
+        type=str,
+        help="Path to save the generated test file (defaults to contract_name_test.move)",
     )
     args = parser.parse_args()
 
@@ -387,6 +490,42 @@ def main():
 
     console.print("[bold magenta]=== Final Contract Source ===[/bold magenta]")
     console.print(final_contract)
+    
+    # Save the contract to a file if output path is provided
+    if args.output:
+        try:
+            output_path = args.output
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+            
+            with open(output_path, "w") as f:
+                f.write(final_contract)
+            console.print(f"[bold green]Contract saved to:[/bold green] {output_path}")
+            
+            # Generate test file if requested
+            if args.generate_tests:
+                test_file_content = generate_test_file(final_contract, system_prompt)
+                
+                # Determine test file path
+                if args.test_output:
+                    test_output_path = args.test_output
+                else:
+                    # Default: use the same directory as the contract file but with _test suffix
+                    contract_filename = os.path.basename(output_path)
+                    contract_name = os.path.splitext(contract_filename)[0]
+                    test_output_path = os.path.join(
+                        os.path.dirname(output_path), 
+                        f"{contract_name}_test.move"
+                    )
+                
+                # Save test file
+                with open(test_output_path, "w") as f:
+                    f.write(test_file_content)
+                console.print(f"[bold green]Test file saved to:[/bold green] {test_output_path}")
+        except Exception as e:
+            console.print(f"[bold red]Error saving files:[/bold red] {e}")
+    elif args.generate_tests:
+        console.print("[bold yellow]Warning:[/bold yellow] Cannot generate tests without saving the contract first. Use --output to save the contract.")
 
 
 if __name__ == "__main__":

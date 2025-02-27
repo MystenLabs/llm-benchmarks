@@ -41,3 +41,21 @@ defi_contract:
     - Fee collection mechanism
     
     Include helpful comments in your code to explain key concepts and design decisions. 
+
+# Game contract prompt
+game_contract:
+  description: "Prompt for generating a gamefi contract in Sui Move with advanced mechanics"
+  system_prompt: "You are an expert Sui Move smart contract developer specializing in blockchain game development. Your task is to generate complete, compilable code only. Do not include explanations outside of code comments. When given compiler feedback, analyze the errors and output a revised version of the entire contract that fixes those issues."
+  content: |
+    Generate a complete, semantically correct Sui Move contract that implements a blockchain game with these features:
+    
+    - A character/game entity type with attributes (strength, agility, intelligence)
+    - A game item type with different rarities and effects
+    - Combat mechanics for characters to battle (include randomness with a seed)
+    - Experience and leveling system
+    - Player rewards and achievements
+    - An economy system with tradable items and currency
+    - Anti-cheat mechanisms and secure random number generation
+    
+    Include helpful comments in your code to explain mechanics, algorithms and design decisions.
+    Ensure the code follows best practices for secure and efficient Sui Move development. 

@@ -124,13 +124,13 @@ def compute_error_code(error: dict) -> str:
 
     The error code is built as follows:
       - Determine a severity prefix using the error's "level":
-          • "BlockingError" or "NonblockingError" → "E"
+          • "BlockingError" or "NonblockingError" → "E" for Error, "N" for NonblockingError
           • "Warning" → "W"
           • "Note" → "I"
           • "Bug" → "ICE"
           • Otherwise, use the first letter of the level (if available)
-      - Pad the "category" value to 2 digits.
-      - Pad the "code" value to 3 digits.
+      - Add the error code padded to 2 digits
+      - Add the category padded to 3 digits
       - If an "external_prefix" exists, prepend it to the result.
 
     Args:
@@ -145,24 +145,33 @@ def compute_error_code(error: dict) -> str:
     external_prefix = error.get("external_prefix")
 
     match level:
-        case "BlockingError" | "NonblockingError":
+        case "BlockingError":
             sev_prefix = "E"
+        case "NonblockingError":
+            sev_prefix = "N"
         case "Warning":
             sev_prefix = "W"
         case "Note":
             sev_prefix = "I"
         case "Bug":
             sev_prefix = "ICE"
+        case "Error":
+            sev_prefix = "E"
         case _:
             sev_prefix = level[0] if level else ""
 
-    # Pad category to 2 digits and code to 3 digits using zfill.
-    cat_str = str(category_val).zfill(2)
-    code_str = str(code_val).zfill(3)
+    # Format code as code then category (instead of category then code)
+    # Pad code to 2 digits and category to 3 digits
+    code_str = str(code_val).zfill(2)
+    cat_str = str(category_val).zfill(3)
+
+    # Special handling for linter warnings (code 4)
+    if code_val == 4 and level == "Warning":
+        return f"Lint {sev_prefix}{code_str}{cat_str}"
 
     if external_prefix:
-        return f"{external_prefix}{sev_prefix}{cat_str}{code_str}"
-    return f"{sev_prefix}{cat_str}{code_str}"
+        return f"{external_prefix}{sev_prefix}{code_str}{cat_str}"
+    return f"{sev_prefix}{code_str}{cat_str}"
 
 def collect_errors(compiler_output: str) -> dict[str, list[dict]]:
     """
@@ -194,75 +203,3 @@ def collect_errors(compiler_output: str) -> dict[str, list[dict]]:
         grouped_errors[error_code].append(error)
     
     return dict(grouped_errors)
-
-# Example usage:
-if __name__ == "__main__":
-    sample_output = """
-UPDATING GIT DEPENDENCY https://github.com/ronanyeah/time-locked-balance.git
-INCLUDING DEPENDENCY TimeLockedBalance
-INCLUDING DEPENDENCY Sui
-INCLUDING DEPENDENCY MoveStdlib
-BUILDING Mineral
-[
-  {
-    "file": "./sources/mine.move",
-    "line": 47,
-    "column": 12,
-    "level": "NonblockingError",
-    "category": 5,
-    "code": 1,
-    "msg": "ability constraint not satisfied"
-  },
-  {
-    "file": "./sources/mine.move",
-    "line": 50,
-    "column": 18,
-    "level": "NonblockingError",
-    "category": 5,
-    "code": 1,
-    "msg": "ability constraint not satisfied"
-  },
-  {
-    "file": "./sources/mine.move",
-    "line": 70,
-    "column": 12,
-    "level": "NonblockingError",
-    "category": 5,
-    "code": 1,
-    "msg": "ability constraint not satisfied"
-  },
-  {
-    "file": "./sources/mine.move",
-    "line": 434,
-    "column": 8,
-    "level": "Warning",
-    "category": 4,
-    "code": 2,
-    "msg": "unnecessary 'while (true)', replace with 'loop'"
-  },
-  {
-    "file": "./sources/icon.move",
-    "line": 6,
-    "column": 8,
-    "level": "Warning",
-    "category": 4,
-    "code": 4,
-    "msg": "unneeded return"
-  },
-  {
-    "file": "/Users/kz/.move/https___github_com_MystenLabs_sui_git_mainnet-v1.24.1/crates/sui-framework/packages/sui-framework/sources/object.move",
-    "line": 165,
-    "column": 4,
-    "level": "Warning",
-    "category": 1,
-    "code": 4,
-    "msg": "invalid documentation comment"
-  }
-]
-Failed to build Move modules: Compilation error.
-"""
-    errors_by_code = collect_errors(sample_output)
-    for code, errors in errors_by_code.items():
-        print(f"Error Code: {code}")
-        for err in errors:
-            print(f"  {err}") 
