@@ -59,3 +59,20 @@ game_contract:
     
     Include helpful comments in your code to explain mechanics, algorithms and design decisions.
     Ensure the code follows best practices for secure and efficient Sui Move development. 
+
+# Liquid staking contract prompt
+liquid_staking_contract:
+  description: "Prompt for generating a liquid staking contract in Sui Move"
+  system_prompt: "You are an expert Sui Move smart contract developer. Your task is to generate complete, compilable code only. Do not include explanations outside of code comments. When given compiler feedback, analyze the errors and output a revised version of the entire contract that fixes those issues."
+  content: |
+    Generate a complete, semantically correct Sui Move contract that implements a liquid staking protocol with these features:
+    
+    - A staking mechanism that accepts native SUI
+    - A liquid staking token that represents the user's staked position
+    - Rewards accrual and distribution system
+    - Unstaking functionality with optional lock periods
+    - Delegation to validators 
+    - Proper security controls and access management
+    
+    Include helpful comments in your code to explain key mechanisms and design decisions.
+    Ensure the code follows best practices for secure and efficient Sui Move development. 
