@@ -51,34 +51,68 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ## Usage
 
-### List Available Prompts:
+### Command-Line Options
 
-```bash
-poetry run python neuromansui/main.py --list
+```
+usage: python -m neuromansui.main [-h] [--prompt PROMPT] [--list]
+                                 [--max-iterations MAX_ITERATIONS]
+                                 [--output OUTPUT] [--save-dir SAVE_DIR]
+                                 [--name NAME] [--generate-tests]
+                                 [--test-output TEST_OUTPUT]
+                                 [--save-iterations]
+                                 [--iterations-output ITERATIONS_OUTPUT]
+                                 [--dark-mode]
+
+Neuromansui: LLM-powered Sui Move contract generator
+
+options:
+  -h, --help            show this help message and exit
+  --prompt PROMPT       Prompt path to use (format: namespace.prompt_name)
+  --list                List all available prompts
+  --max-iterations MAX_ITERATIONS
+                        Maximum number of iterations for refinement
+  --output OUTPUT       Save the generated contract to this file path (deprecated, use --save-dir and --name instead)
+  --save-dir SAVE_DIR   Directory to save all output files (defaults to 'test_outputs')
+  --name NAME           Name for the output files (defaults to auto-generated from prompt name and timestamp)
+  --generate-tests      Generate test file for the contract
+  --test-output TEST_OUTPUT
+                        Path to save the generated test file (defaults to contract_name_test.move)
+  --save-iterations     Save all iteration data for fine-tuning
+  --iterations-output ITERATIONS_OUTPUT
+                        Path to save the iteration data (without extension, deprecated, use --save-dir and --name instead)
+  --dark-mode           Use dark mode for visualizations
 ```
 
-### Generate a Contract:
+### Basic Examples
 
+List available prompts:
 ```bash
-poetry run python neuromansui/main.py --prompt sui_move.base_contract
+python -m neuromansui.main --list
 ```
 
-### Generate a Contract and Save to File:
-
+Generate a basic Sui Move contract:
 ```bash
-poetry run python neuromansui/main.py --prompt sui_move.base_contract --output contracts/my_contract.move
+python -m neuromansui.main --prompt sui_move.base_contract
 ```
 
-### Generate a Contract with Tests:
-
+Generate a contract and save it:
 ```bash
-poetry run python neuromansui/main.py --prompt sui_move.base_contract --output contracts/my_contract.move --generate-tests
+python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts
 ```
 
-### Generate Contract with Custom Test File Path:
-
+Generate a contract with a specific name:
 ```bash
-poetry run python neuromansui/main.py --prompt sui_move.base_contract --output contracts/my_contract.move --generate-tests --test-output contracts/tests/my_custom_test.move
+python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract
+```
+
+Generate a contract and save iterations data for fine-tuning:
+```bash
+python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations
+```
+
+Generate a contract with test file and visualizations:
+```bash
+python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations --generate-tests --dark-mode
 ```
 
 ### Additional Options:
@@ -145,7 +179,18 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - **Test Generation**: Automatically generates test files for the contracts
 - **Progress Tracking**: Visual progress indicators and metrics during refinement
 - **File Output**: Save contracts and tests to specified file paths
+- **Fine-tuning Data Collection**: Save iteration data in formats suitable for fine-tuning language models
 - **Detailed Error Reporting**: Structured error reports with categorization and statistics
 - **Extensible Pipeline**: Easily customizable for additional evaluation metrics
+- **Visualization**: Interactive Plotly charts for error progression
+
+## Visualization Features
+
+- Stacked bar chart showing errors by type for each iteration
+- Trend line showing total errors over iterations
+- Percentage improvement annotations between iterations
+- Interactive tooltips with detailed error information
+- Star markers indicating successful compilations
+- Automatic generation of both light and dark mode versions
 
 

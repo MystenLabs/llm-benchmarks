@@ -5,6 +5,7 @@ import tempfile
 import shutil
 from dataclasses import dataclass
 from typing import Dict, List
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -192,8 +193,60 @@ def test_iterative_evaluation(monkeypatch):
 
     base_prompt = "base prompt"
     system_prompt = "system prompt"
-    final_contract = iterative_evaluation(base_prompt, system_prompt, max_iterations=2)
+    final_contract, fine_tuning_data = iterative_evaluation(base_prompt, system_prompt, max_iterations=2)
     # The final contract should be our dummy generated contract.
     assert final_contract == "dummy contract"
     # We should have invoked compile_contract twice.
-    assert call_counter["compile"] == 2 
+    assert call_counter["compile"] == 2
+
+
+def test_main_dark_mode_visualization(monkeypatch):
+    """Test that the dark_mode argument is correctly passed to save_fine_tuning_data."""
+    # Mock dependencies
+    class MockPromptLoader:
+        def get_prompt(self, *args, **kwargs):
+            return ("test prompt", "test system prompt")
+        def get_prompt_description(self, *args, **kwargs):
+            return "Test description"
+    
+    monkeypatch.setattr('neuromansui.main.PromptLoader', lambda *args, **kwargs: MockPromptLoader())
+    
+    # Mock iterative_evaluation
+    monkeypatch.setattr('neuromansui.main.iterative_evaluation', lambda *args, **kwargs: ("final contract", ["iteration data"]))
+    
+    # Mock save_fine_tuning_data
+    mock_save_data_calls = []
+    def mock_save_fine_tuning_data(data, path, dark_mode=False):
+        mock_save_data_calls.append({"data": data, "path": path, "dark_mode": dark_mode})
+    
+    monkeypatch.setattr('neuromansui.main.save_fine_tuning_data', mock_save_fine_tuning_data)
+    
+    # Mock all file operations
+    monkeypatch.setattr('os.path.exists', lambda path: False)
+    monkeypatch.setattr('os.makedirs', lambda *args, **kwargs: None)
+    
+    # Mock open to avoid file operations
+    mock_file = MagicMock()
+    mock_file.__enter__.return_value = mock_file
+    monkeypatch.setattr('builtins.open', lambda *args, **kwargs: mock_file)
+    
+    # Mock input to avoid user prompts
+    monkeypatch.setattr('builtins.input', lambda prompt: 'y')
+    
+    # Set up command line arguments - using simpler arguments that don't require as many mocks
+    monkeypatch.setattr('sys.argv', [
+        'main.py',
+        '--prompt', 'test.prompt',
+        '--module-name', 'TestModule',
+        '--save-dir', '/tmp',
+        '--save-iterations',
+        '--dark-mode'
+    ])
+    
+    # Run main
+    from neuromansui.main import main
+    main()
+    
+    # Check that save_fine_tuning_data was called with dark_mode=True
+    assert len(mock_save_data_calls) > 0, "save_fine_tuning_data was not called"
+    assert mock_save_data_calls[0]['dark_mode'] is True 
