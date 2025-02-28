@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function ViewReport() {
+// Create a client component that uses useSearchParams
+function ReportContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id = searchParams.get('id');
   const file = searchParams.get('file');
   const [loading, setLoading] = useState(true);
@@ -18,13 +20,10 @@ export default function ViewReport() {
       return;
     }
     
-    // Instead of fetching and rendering the HTML content ourselves,
-    // we'll redirect to the API endpoint that serves the raw HTML file
-    // This ensures all the scripts and resources in the HTML report run correctly
-    window.location.href = `/api/reports/${id}?file=${encodeURIComponent(file)}`;
-  }, [id, file]);
+    // Use Next.js router for client-side navigation instead of window.location
+    router.push(`/api/reports/${id}?file=${encodeURIComponent(file)}`);
+  }, [id, file, router]);
   
-  // This component will only be visible briefly before the redirect occurs
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-12">
       {loading ? (
@@ -44,5 +43,21 @@ export default function ViewReport() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+// Wrap the component that uses useSearchParams in a Suspense boundary
+export default function ViewReport() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-12">
+        <div className="flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <span className="mt-4">Loading report...</span>
+        </div>
+      </div>
+    }>
+      <ReportContent />
+    </Suspense>
   );
 } 

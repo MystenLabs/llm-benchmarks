@@ -1,7 +1,13 @@
+.DS_Store
+.cursorignore
+
 .env
 .env.local
 */__pycache__/*
 __pycache__
 /__pycache__
 outputs
+
+/output*
+/test_output*
 

@@ -1,31 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import hljs from 'highlight.js/lib/core';
-import rust from 'highlight.js/lib/languages/rust';
-import 'highlight.js/styles/github-dark.css';
+import { Suspense } from 'react';
 
-export default function CodeViewer() {
-  const searchParams = useSearchParams();
-  const id = searchParams.get('id');
-  const file = searchParams.get('file');
-  
+// Move the existing code viewer content into a separate component
+// Since the current file already contains the code viewer implementation,
+// we'll wrap its content in a Suspense boundary.
+
+function CodeViewerContent() {
+  const { useEffect, useState } = require('react');
+  const { useSearchParams } = require('next/navigation');
+  const Link = require('next/link').default;
+  const hljs = require('highlight.js/lib/core');
+  const rust = require('highlight.js/lib/languages/rust');
+  require('highlight.js/styles/github-dark.css');
+
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!id || !file) {
-      setError('Missing required parameters');
-      setLoading(false);
-      return;
-    }
-
+    const filename = searchParams.get('file');
     async function fetchCode() {
       try {
-        const response = await fetch(`/api/reports/${id}?file=${encodeURIComponent(file || '')}`);
+        const response = await fetch(`/api/reports/${encodeURIComponent(searchParams.get('id') || '')}?file=${encodeURIComponent(filename || '')}`);
         if (!response.ok) {
           throw new Error(`Error fetching code: ${response.statusText}`);
         }
@@ -37,22 +35,19 @@ export default function CodeViewer() {
         setLoading(false);
       }
     }
-
     fetchCode();
-  }, [id, file]);
+  }, [searchParams]);
 
   // Load and initialize syntax highlighting
   useEffect(() => {
     if (!loading && !error && code) {
-      // Register the Rust language for Move syntax highlighting
       hljs.registerLanguage('rust', rust);
       hljs.highlightAll();
-      
-      // Add line numbers
+
       const codeBlocks = document.querySelectorAll('pre code');
       codeBlocks.forEach(block => {
         const lines = block.innerHTML.split('\n');
-        const numberedLines = lines.map((line, i) => 
+        const numberedLines = lines.map((line, i) =>
           `<span class="line-number">${i + 1}</span>${line}`
         ).join('\n');
         block.innerHTML = numberedLines;
@@ -82,7 +77,7 @@ export default function CodeViewer() {
           </div>
         ) : (
           <div className="bg-white shadow-md rounded-lg p-6 overflow-hidden">
-            <h2 className="text-xl font-semibold mb-4">{file}</h2>
+            <h2 className="text-xl font-semibold mb-4">Code File</h2>
             <div className="relative overflow-auto">
               <pre className="rounded-md p-4 bg-gray-800 text-white overflow-x-auto">
                 <code className="language-rust">{code}</code>
@@ -91,7 +86,6 @@ export default function CodeViewer() {
           </div>
         )}
       </div>
-      
       <style jsx global>{`
         .line-number {
           display: inline-block;
@@ -103,11 +97,18 @@ export default function CodeViewer() {
           border-right: 1px solid #555;
           margin-right: 0.5em;
         }
-        
         pre {
           tab-size: 2;
         }
       `}</style>
     </div>
+  );
+}
+
+export default function CodeViewerPage() {
+  return (
+    <Suspense fallback={<div>Loading code viewer...</div>}>
+      <CodeViewerContent />
+    </Suspense>
   );
 } 

@@ -35,27 +35,32 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 # Set up Python environment
 WORKDIR /app
 
-# Download and install python 3.13
+# Download and install Python 3.12 (more stable than 3.13)
 RUN apt-get update && apt-get install -y software-properties-common
 RUN add-apt-repository ppa:deadsnakes/ppa
-RUN apt-get update && apt-get install -y python3.13
-RUN ln -s /usr/bin/python3.13 /usr/bin/python3
-RUN ln -s /usr/bin/python3.13 /usr/bin/python
+RUN apt-get update && apt-get install -y python3.12 python3.12-venv
+# Update Python symlinks (removing existing ones first)
+RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python3.12 /usr/bin/python3
+RUN rm -f /usr/bin/python && ln -s /usr/bin/python3.12 /usr/bin/python
+
+# Install pip for Python 3.12
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
 
 # Copy requirements
-COPY pyproject.toml poetry.lock* /app/
-
-# Install Python dependencies
-RUN pip3 install poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi
-
+COPY pyproject.toml poetry.lock* README.md /app/
 # Copy the application
 COPY neuromansui /app/neuromansui
+COPY neuromansui-server /app/neuromansui-server
 COPY prompts /app/prompts
 
-# Setup the report server
-COPY neuromansui-server /app/neuromansui-server
+WORKDIR /app/neuromansui
+
+# Install Python dependencies
+RUN python3 -m pip install poetry && \
+    poetry lock && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-root --no-ansi
+
 WORKDIR /app/neuromansui-server
 RUN npm install && \
     npm run build
@@ -77,4 +82,4 @@ RUN chmod +x /app/start-server.sh
 ENTRYPOINT ["python3", "-m", "neuromansui.main"]
 
 # Default command
-CMD ["--help"] 
+CMD ["--help"]

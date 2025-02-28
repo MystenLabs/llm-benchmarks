@@ -7,6 +7,12 @@
 
 `neuroman.sui` is a Python-based iterative evaluation pipeline that leverages OpenAI's GPT-4 to automatically generate and refine Sui Move smart contracts. The pipeline generates a contract from a given prompt, attempts to compile it, and then uses the compiler feedback to iteratively improve the contract until either it compiles successfully or the maximum number of iterations is reached.
 
+## Components
+
+- **Smart Contract Generator**: Core Python tool that uses LLMs to generate and refine Move code
+- **Report Visualizer**: HTML-based visualizations of error progression during refinement
+- **Report Server**: Web-based server for browsing and viewing generated reports and contracts
+
 ## Goals
 
 - **Iterative Refinement**: Automatically refines contract code based on simulated compiler feedback.
@@ -115,18 +121,28 @@ Generate a contract with test file and visualizations:
 python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations --generate-tests --dark-mode
 ```
 
-### Additional Options:
+### Using the Report Server
+
+The project includes a web-based server for viewing HTML reports:
 
 ```bash
-poetry run python neuromansui/main.py --prompt sui_move.game_contract --max-iterations 10
+# Start the report server
+./start-server.sh
 ```
 
-The script will:
-1. Generate an initial version of a Sui Move contract based on the selected prompt.
-2. Simulate the compilation process and output compiler feedback.
-3. Iteratively refine the contract code until it compiles successfully or reaches the maximum iterations.
-4. Display a progress bar and refinement metrics throughout the process.
-5. Print the final contract source code to the console and optionally save it to a file.
+Then open your browser at http://localhost:3000 to access the dashboard.
+
+### Docker Usage
+
+Using Docker Compose:
+
+```bash
+# Run the standard generator
+docker-compose up neuromansui
+
+# Run the report server
+docker-compose up neuromansui-server
+```
 
 ## Available Contract Templates
 
@@ -147,7 +163,9 @@ neuromansui/
 │   └── prompt_loader.py   # Utility for loading prompts from YAML files
 ├── prompts/               # YAML files containing prompts for different contract types
 │   └── sui_move.yaml      # Sui Move contract prompts
+├── neuromansui-server/    # Next.js web server for viewing reports
 ├── pyproject.toml         # Poetry configuration and dependencies
+├── start-server.sh        # Script to start the report server
 ├── setup.sh               # Setup script for quick installation and testing
 └── README.md              # This file
 ```
@@ -183,6 +201,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - **Detailed Error Reporting**: Structured error reports with categorization and statistics
 - **Extensible Pipeline**: Easily customizable for additional evaluation metrics
 - **Visualization**: Interactive Plotly charts for error progression
+- **Report Server**: Web-based interface for browsing and viewing generated reports
 
 ## Visualization Features
 
