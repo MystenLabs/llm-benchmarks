@@ -1,0 +1,532 @@
+{
+  "version": "1.0",
+  "created_at": "2025-02-28T16:58:04.033321",
+  "description": "Sui Move compiler error prediction dataset",
+  "examples": [
+    {
+      "input": "address temp_addr {\n\nmodule my_module {\n\n    // Import Sui-specific transaction context to simulate coin transfers and global state management.\n    use sui::tx_context::TxContext;\n    use sui::object::UID;\n    use std::signer;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Data Structures                            //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Configuration resource for the staking pool.\n    // It is created once by the administrator and holds protocol-wide parameters.\n    struct Config has key {\n        admin: address,       // Administrator with special privileges.\n        reward_rate: u64,     // Reward rate per second.\n        lock_period: u64,     // Default lock period in seconds for staked funds.\n    }\n\n    // Resource representing an individual user's staked position.\n    // It tracks the deposit amount, the last time rewards were accrued,\n    // the timestamp until which unstaking is locked, and the delegated validator.\n    struct StakedPosition has key {\n        id: UID,              // Unique identifier for this position.\n        owner: address,       // Owner of the staked position.\n        deposit: u64,         // Amount staked (in native SUI units).\n        last_update: u64,     // Timestamp of the last rewards update.\n        lock_until: u64,      // Timestamp until which unstaking is locked.\n        delegated_validator: address, // The validator to which this stake is delegated.\n    }\n\n    // Resource representing the liquid staking token.\n    // This token is minted upon staking and serves as a tradable representation\n    // of the underlying staked asset plus accrued rewards.\n    struct LiquidStakedToken has key, store {\n        id: UID,         // Unique identifier for the token.\n        owner: address,  // Owner of the liquid token.\n        amount: u64,     // The staked amount represented by this token.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                               Error Codes                              //\n    ////////////////////////////////////////////////////////////////////////////\n\n    const ENOT_ADMIN: u64 = 0;             // Caller is not the administrator.\n    const ELOCKED: u64 = 1;                // Attempt to unstake before lock period expires.\n    const E_NOT_OWNER: u64 = 2;            // Caller does not own the resource.\n    const E_INSUFFICIENT_AMOUNT: u64 = 3;    // Deposit amount must be greater than zero.\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Initialization Function                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Initialize the staking pool configuration.\n    // This function should only be called once by the protocol administrator.\n    public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n        Config {\n            admin: signer::address_of(admin),\n            reward_rate,\n            lock_period,\n        }\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Staking Functionality                         //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Stake function:\n    // Allows a user to stake a specified amount (simulated as a u64 value)\n    // and delegate the stake to a chosen validator.\n    // The 'lock' flag indicates whether the funds are subject to a lock period.\n    //\n    // In a production environment, the 'deposit' would be provided as a Coin<SUI>\n    // object transferred into the pool.\n    //\n    // Returns:\n    // - A new StakedPosition resource representing the user's locked stake.\n    // - A corresponding LiquidStakedToken resource minted to represent the liquid stake.\n    public fun stake(\n        staker: &signer,\n        deposit: u64,\n        delegate: address,\n        lock: bool,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): (StakedPosition, LiquidStakedToken) {\n        // Ensure a positive deposit amount.\n        assert!(deposit > 0, E_INSUFFICIENT_AMOUNT);\n\n        let owner = signer::address_of(staker);\n        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };\n\n        // Create a new staked position with a fresh UID.\n        let position = StakedPosition {\n            id: UID::new(ctx),\n            owner,\n            deposit,\n            last_update: current_time,\n            lock_until,\n            delegated_validator: delegate,\n        };\n\n        // Mint a liquid staking token with a unique identifier.\n        let liquid = LiquidStakedToken {\n            id: UID::new(ctx),\n            owner,\n            amount: deposit,\n        };\n\n        (position, liquid)\n    }\n\n    // Internal helper function to accrue rewards on a staked position.\n    // Rewards are calculated based on elapsed time since the last update and the global reward rate.\n    // Updates the last_update field of the position.\n    fun accrue_rewards(position: &mut StakedPosition, current_time: u64, reward_rate: u64): u64 {\n        let elapsed: u64 = current_time - position.last_update;\n        let reward: u64 = elapsed * reward_rate;\n        position.last_update = current_time;\n        reward\n    }\n\n    // Claim rewards function:\n    // Allows a staker to claim accrued rewards without unstaking.\n    // Returns the amount of rewards accrued since the last claim.\n    public fun claim_rewards(\n        staker: &signer,\n        position: &mut StakedPosition,\n        current_time: u64,\n        config: &Config\n    ): u64 {\n        let caller = signer::address_of(staker);\n        // Ensure that only the owner of the staked position can claim rewards.\n        assert!(caller == position.owner, E_NOT_OWNER);\n\n        let reward: u64 = accrue_rewards(position, current_time, config.reward_rate);\n\n        // In a real implementation, rewards could be minted or transferred to the user here.\n        // For simulation purposes, we simply return the computed reward.\n        reward\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Unstaking Functionality                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Unstake function:\n    // Allows a user to redeem their staked funds along with any accrued rewards.\n    // The caller must provide both the StakedPosition and its corresponding LiquidStakedToken.\n    //\n    // Preconditions:\n    // - The caller must be the owner of both resources.\n    // - The current time must be greater than or equal to the lock_until timestamp.\n    //\n    // Postconditions:\n    // - The liquid token is burned (dropped) and the staked position is consumed.\n    // - The total amount (original deposit plus rewards) is returned.\n    //\n    // In a full implementation, this function would transfer native SUI coins back to the staker.\n    public fun unstake(\n        staker: &signer,\n        position: StakedPosition,\n        liquid: LiquidStakedToken,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): u64 {\n        let caller = signer::address_of(staker);\n\n        // Verify the staker owns the staked position.\n        assert!(caller == position.owner, E_NOT_OWNER);\n        // Verify the staker owns the liquid token.\n        assert!(caller == liquid.owner, E_NOT_OWNER);\n\n        // Ensure that the lock period has expired.\n        assert!(current_time >= position.lock_until, ELOCKED);\n\n        // Calculate accrued rewards from the last update until now.\n        let reward: u64 = (current_time - position.last_update) * config.reward_rate;\n        let total_amount: u64 = position.deposit + reward;\n\n        // Burn the liquid staking token by dropping it.\n        // In an actual implementation, token burning logic would be more sophisticated.\n        drop(liquid);\n        // Consuming the staked position resource.\n        drop(position);\n\n        // Simulate transferring native SUI coins back to the user by returning the total amount.\n        // In production, this would involve creating a Coin<SUI> object and transferring it.\n        total_amount\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Delegation Functionality                        //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // In this simplified implementation, delegation is handled at the time of staking.\n    // The 'delegate' parameter in the stake() function specifies which validator\n    // the staked funds will be delegated to. The delegated validator address is stored\n    // in the StakedPosition resource.\n    //\n    // Future extensions could include functions to re-delegate or update validator preferences.\n    \n    ////////////////////////////////////////////////////////////////////////////\n    //                          Helper Functions                              //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Custom assert function that aborts with the specified error code if the condition is false.\n    fun assert(condition: bool, error_code: u64) {\n        if (!condition) {\n            abort error_code;\n        }\n    }\n}\n\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nerror[E13002]: feature is deprecated in specified edition\n  \u250c\u2500 ./sources/temp_contract.move:1:1\n  \u2502\n1 \u2502 address temp_addr {\n  \u2502 ^^^^^^^ 'address' blocks are deprecated. Use addresses directly in module definitions instead.\n2 \u2502 \n3 \u2502 module my_module {\n  \u2502        --------- Replace with 'temp_addr::my_module'\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:6:26\n  \u2502\n6 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:7:22\n  \u2502\n7 \u2502     use sui::object::UID;\n  \u2502                      ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:8:9\n  \u2502\n8 \u2502     use std::signer;\n  \u2502         ^^^^^^^^^^^ Invalid 'use'. Unbound module: 'std::signer'\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:16:5\n   \u2502\n16 \u2502     struct Config has key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:17:9\n   \u2502\n16 \u2502     struct Config has key {\n   \u2502                       --- The 'key' ability is used to declare objects in Sui\n17 \u2502         admin: address,       // Administrator with special privileges.\n   \u2502         ^^^^^ Invalid object 'Config'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:25:5\n   \u2502\n25 \u2502     struct StakedPosition has key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:37:5\n   \u2502\n37 \u2502     struct LiquidStakedToken has key, store {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nwarning[W09011]: unused constant\n   \u250c\u2500 ./sources/temp_contract.move:47:11\n   \u2502\n47 \u2502     const ENOT_ADMIN: u64 = 0;             // Caller is not the administrator.\n   \u2502           ^^^^^^^^^^ The constant 'ENOT_ADMIN' is never used. Consider removing it.\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_const)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[Sui E02003]: invalid 'init' function\n   \u250c\u2500 ./sources/temp_contract.move:58:16\n   \u2502\n58 \u2502     public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n   \u2502     ------     ^^^^ Invalid 'init' function declaration\n   \u2502     \u2502           \n   \u2502     'init' functions must be internal to their module\n\nerror[Sui E02003]: invalid 'init' function\n   \u250c\u2500 ./sources/temp_contract.move:58:16\n   \u2502\n58 \u2502     public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n   \u2502                ^^^^        ------- Invalid parameter 'admin' of type '&signer'. Expected a one-time witness type, 'temp_addr::my_module::MY_MODULE\n   \u2502                \u2502            \n   \u2502                Invalid 'init' function declaration\n   \u2502\n   = One-time witness types are structs with the following requirements: their name is the upper-case version of the module's name, they have no fields (or a single boolean field), they have no type parameters, and they have only the 'drop' ability.\n\nerror[Sui E02003]: invalid 'init' function\n   \u250c\u2500 ./sources/temp_contract.move:58:16\n   \u2502\n58 \u2502     public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n   \u2502                ^^^^                                   ----------- 'init' functions can have at most two parameters\n   \u2502                \u2502                                       \n   \u2502                Invalid 'init' function declaration\n\nerror[Sui E02003]: invalid 'init' function\n   \u250c\u2500 ./sources/temp_contract.move:58:16\n   \u2502\n58 \u2502     public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n   \u2502                ^^^^                                                --- 'init' functions must have their last parameter as '&sui::tx_context::TxContext' or '&mut sui::tx_context::TxContext'\n   \u2502                \u2502                                                    \n   \u2502                Invalid 'init' function declaration\n\nerror[Sui E02003]: invalid 'init' function\n   \u250c\u2500 ./sources/temp_contract.move:58:16\n   \u2502\n58 \u2502     public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n   \u2502                ^^^^                                                      ------ 'init' functions must have a return type of '()'\n   \u2502                \u2502                                                          \n   \u2502                Invalid 'init' function declaration\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:58:21\n   \u2502\n58 \u2502     public fun init(admin: &signer, reward_rate: u64, lock_period: u64): Config {\n   \u2502                     ^^^^^ Unused parameter 'admin'. Consider removing or prefixing with an underscore: '_admin'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:60:20\n   \u2502\n60 \u2502             admin: signer::address_of(admin),\n   \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:82:9\n   \u2502\n82 \u2502         staker: &signer,\n   \u2502         ^^^^^^ Unused parameter 'staker'. Consider removing or prefixing with an underscore: '_staker'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:93:21\n   \u2502\n93 \u2502         let owner = signer::address_of(staker);\n   \u2502                     ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:98:17\n   \u2502\n98 \u2502             id: UID::new(ctx),\n   \u2502                 ^^^ Invalid construction. Expected an enum\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- But 'UID' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:108:17\n    \u2502\n108 \u2502             id: UID::new(ctx),\n    \u2502                 ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:130:9\n    \u2502\n130 \u2502         staker: &signer,\n    \u2502         ^^^^^^ Unused parameter 'staker'. Consider removing or prefixing with an underscore: '_staker'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:135:22\n    \u2502\n135 \u2502         let caller = signer::address_of(staker);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:164:9\n    \u2502\n164 \u2502         staker: &signer,\n    \u2502         ^^^^^^ Unused parameter 'staker'. Consider removing or prefixing with an underscore: '_staker'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:169:9\n    \u2502\n169 \u2502         ctx: &mut TxContext\n    \u2502         ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:171:22\n    \u2502\n171 \u2502         let caller = signer::address_of(staker);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:187:9\n    \u2502\n187 \u2502         drop(liquid);\n    \u2502         ^^^^ Unbound function 'drop' in current scope\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:189:9\n    \u2502\n189 \u2502         drop(position);\n    \u2502         ^^^^ Unbound function 'drop' in current scope\n\nwarning[W09008]: unused function\n    \u250c\u2500 ./sources/temp_contract.move:212:9\n    \u2502\n212 \u2502     fun assert(condition: bool, error_code: u64) {\n    \u2502         ^^^^^^ The non-'public', non-'entry' function 'assert' is never called. Consider removing it.\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_function)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03011]: invalid use of reserved name\n    \u250c\u2500 ./sources/temp_contract.move:212:9\n    \u2502\n212 \u2502     fun assert(condition: bool, error_code: u64) {\n    \u2502         ^^^^^^ Invalid function name 'assert'. 'assert' is restricted and cannot be used to name a function\n\n",
+      "metadata": {
+        "iteration": 1,
+        "timestamp": 1740790489.1663659,
+        "error_stats": {
+          "errors": 29,
+          "compiler_warnings": 9,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "N02013": {
+            "count": 1,
+            "message": "feature is deprecated in specified edition",
+            "level": "NonblockingError"
+          },
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "N03001": {
+            "count": 3,
+            "message": "invalid modifier",
+            "level": "NonblockingError"
+          },
+          "N07002": {
+            "count": 1,
+            "message": "invalid object declaration",
+            "level": "NonblockingError"
+          },
+          "W11009": {
+            "count": 1,
+            "message": "unused constant",
+            "level": "Warning"
+          },
+          "N03002": {
+            "count": 5,
+            "message": "invalid 'init' function",
+            "level": "NonblockingError"
+          },
+          "W02009": {
+            "count": 5,
+            "message": "unused variable",
+            "level": "Warning"
+          },
+          "E06003": {
+            "count": 6,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "E05003": {
+            "count": 2,
+            "message": "unbound unscoped name",
+            "level": "BlockingError"
+          },
+          "W08009": {
+            "count": 1,
+            "message": "unused function",
+            "level": "Warning"
+          },
+          "E11003": {
+            "count": 1,
+            "message": "invalid use of reserved name",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import necessary modules from the Sui framework.\n    use sui::tx_context::TxContext;\n    use sui::object::{UID, move_to};\n    use sui::framework::signer;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Error Codes                                //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Error code for attempting to unstake before the lock period expires.\n    const ELOCKED: u64 = 1;\n    // Error code for operations attempted by a non-owner of a resource.\n    const E_NOT_OWNER: u64 = 2;\n    // Error code for providing an insufficient deposit amount.\n    const E_INSUFFICIENT_AMOUNT: u64 = 3;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Data Structures                            //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // The global configuration object for the staking pool.\n    // All objects with the 'key' ability must have an 'id' field of type UID as the first field.\n    public struct Config has key {\n        id: UID,               // Unique identifier for the configuration object.\n        admin: address,        // Administrator with special privileges.\n        reward_rate: u64,      // Reward rate per second.\n        lock_period: u64,      // Default lock period in seconds for staked funds.\n    }\n\n    // Resource representing an individual user's staked position.\n    public struct StakedPosition has key {\n        id: UID,                       // Unique identifier for this position.\n        owner: address,                // Owner of the staked position.\n        deposit: u64,                  // Amount staked (in native SUI units).\n        last_update: u64,              // Timestamp of the last rewards update.\n        lock_until: u64,               // Timestamp until which unstaking is locked.\n        delegated_validator: address,  // The validator to which this stake is delegated.\n    }\n\n    // Resource representing the liquid staking token that is minted alongside staking.\n    public struct LiquidStakedToken has key, store {\n        id: UID,         // Unique identifier for the token.\n        owner: address,  // Owner of the liquid token.\n        amount: u64,     // The staked amount represented by this token.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Initialization Function                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Public entry function to initialize the staking pool configuration.\n    // It creates a Config resource and moves it into the admin's account.\n    // Note: In Sui Move, functions named \"initialize\" are regular public entry functions.\n    public entry fun initialize(admin: &signer, reward_rate: u64, lock_period: u64, ctx: &mut TxContext) {\n        let config = Config {\n            id: UID::new(ctx),\n            admin: signer::address_of(admin),\n            reward_rate,\n            lock_period,\n        };\n        move_to(admin, config);\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Staking Functionality                         //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Stake function:\n    // Allows a user to stake a specified amount and delegate the stake to a chosen validator.\n    //\n    // Parameters:\n    // - staker: The signer initiating the stake.\n    // - deposit: The amount to stake.\n    // - delegate: The address of the validator to delegate to.\n    // - lock: A flag indicating if the stake should be locked for a period.\n    // - current_time: The current timestamp.\n    // - config: A reference to the global configuration.\n    // - ctx: Transaction context for object creation.\n    //\n    // Returns:\n    // - A new StakedPosition resource representing the user's staked funds.\n    // - A corresponding LiquidStakedToken resource minted to represent the liquid stake.\n    public fun stake(\n        staker: &signer,\n        deposit: u64,\n        delegate: address,\n        lock: bool,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): (StakedPosition, LiquidStakedToken) {\n        // Ensure the deposit amount is greater than zero.\n        check(deposit > 0, E_INSUFFICIENT_AMOUNT);\n\n        let owner = signer::address_of(staker);\n        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };\n\n        // Create a new staked position with a fresh UID.\n        let position = StakedPosition {\n            id: UID::new(ctx),\n            owner,\n            deposit,\n            last_update: current_time,\n            lock_until,\n            delegated_validator: delegate,\n        };\n\n        // Mint a liquid staking token with a unique identifier.\n        let liquid = LiquidStakedToken {\n            id: UID::new(ctx),\n            owner,\n            amount: deposit,\n        };\n\n        (position, liquid)\n    }\n\n    // Internal helper function to accrue rewards on a staked position.\n    // Rewards are computed based on the elapsed time since the last update.\n    // Updates the last_update field of the position to the current time.\n    fun accrue_rewards(position: &mut StakedPosition, current_time: u64, reward_rate: u64): u64 {\n        let elapsed: u64 = current_time - position.last_update;\n        let reward: u64 = elapsed * reward_rate;\n        position.last_update = current_time;\n        reward\n    }\n\n    // Claim rewards function:\n    // Allows the owner of a staked position to claim accrued rewards without unstaking.\n    // Returns the amount of rewards accrued since the last claim.\n    public fun claim_rewards(\n        staker: &signer,\n        position: &mut StakedPosition,\n        current_time: u64,\n        config: &Config\n    ): u64 {\n        let caller = signer::address_of(staker);\n        // Ensure that only the owner of the staked position can claim rewards.\n        check(caller == position.owner, E_NOT_OWNER);\n\n        let reward: u64 = accrue_rewards(position, current_time, config.reward_rate);\n        reward\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Unstaking Functionality                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Unstake function:\n    // Allows a user to redeem their staked funds along with any accrued rewards.\n    // Preconditions:\n    // - The staker must be the owner of both the staked position and its liquid token.\n    // - The current time must be greater than or equal to the lock_until timestamp.\n    //\n    // Postconditions:\n    // - The liquid token and staked position resources are consumed.\n    // - The sum of the original deposit and accrued rewards is returned.\n    public fun unstake(\n        staker: &signer,\n        position: StakedPosition,\n        liquid: LiquidStakedToken,\n        current_time: u64,\n        config: &Config,\n        _ctx: &mut TxContext\n    ): u64 {\n        let caller = signer::address_of(staker);\n\n        // Verify ownership of the staked position.\n        check(caller == position.owner, E_NOT_OWNER);\n        // Verify ownership of the liquid token.\n        check(caller == liquid.owner, E_NOT_OWNER);\n        // Ensure that the lock period has expired.\n        check(current_time >= position.lock_until, ELOCKED);\n\n        // Calculate accrued rewards since the last update.\n        let reward: u64 = (current_time - position.last_update) * config.reward_rate;\n        let total_amount: u64 = position.deposit + reward;\n\n        // Resources are consumed by going out of scope.\n        total_amount\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Helper Functions                              //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Helper function to check a condition and abort with the specified error code if false.\n    fun check(condition: bool, error_code: u64) {\n        if (!condition) {\n            abort error_code;\n        }\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:23\n  \u2502\n5 \u2502     use sui::object::{UID, move_to};\n  \u2502                       ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:5:28\n  \u2502\n5 \u2502     use sui::object::{UID, move_to};\n  \u2502                            ^^^^^^^ Invalid 'use'. Unbound member 'move_to' in module 'sui::object'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13\n  \u2502\n5 \u2502 module sui::object;\n  \u2502             ------ Module 'sui::object' declared here\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:6:9\n  \u2502\n6 \u2502     use sui::framework::signer;\n  \u2502         ^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'sui::framework'\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:58:17\n   \u2502\n58 \u2502             id: UID::new(ctx),\n   \u2502                 ^^^ Invalid construction. Expected an enum\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- But 'UID' is an struct\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:59:20\n   \u2502\n59 \u2502             admin: signer::address_of(admin),\n   \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:63:9\n   \u2502\n63 \u2502         move_to(admin, config);\n   \u2502         ^^^^^^^ Unbound function 'move_to' in current scope\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:86:9\n   \u2502\n86 \u2502         staker: &signer,\n   \u2502         ^^^^^^ Unused parameter 'staker'. Consider removing or prefixing with an underscore: '_staker'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:97:21\n   \u2502\n97 \u2502         let owner = signer::address_of(staker);\n   \u2502                     ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:102:17\n    \u2502\n102 \u2502             id: UID::new(ctx),\n    \u2502                 ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:112:17\n    \u2502\n112 \u2502             id: UID::new(ctx),\n    \u2502                 ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:134:9\n    \u2502\n134 \u2502         staker: &signer,\n    \u2502         ^^^^^^ Unused parameter 'staker'. Consider removing or prefixing with an underscore: '_staker'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:139:22\n    \u2502\n139 \u2502         let caller = signer::address_of(staker);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:161:9\n    \u2502\n161 \u2502         staker: &signer,\n    \u2502         ^^^^^^ Unused parameter 'staker'. Consider removing or prefixing with an underscore: '_staker'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:168:22\n    \u2502\n168 \u2502         let caller = signer::address_of(staker);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\n",
+      "metadata": {
+        "iteration": 2,
+        "timestamp": 1740790525.493074,
+        "error_stats": {
+          "errors": 15,
+          "compiler_warnings": 5,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E03003": {
+            "count": 1,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "E06003": {
+            "count": 7,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "E05003": {
+            "count": 1,
+            "message": "unbound unscoped name",
+            "level": "BlockingError"
+          },
+          "W02009": {
+            "count": 3,
+            "message": "unused variable",
+            "level": "Warning"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import necessary modules from the Sui framework.\n    use sui::tx_context::TxContext;\n    use sui::object::{UID, new_uid};\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Error Codes                                //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Error code for attempting to unstake before the lock period expires.\n    const ELOCKED: u64 = 1;\n    // Error code when an operation is attempted by a non-owner.\n    const E_NOT_OWNER: u64 = 2;\n    // Error code for providing an insufficient deposit amount.\n    const E_INSUFFICIENT_AMOUNT: u64 = 3;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Data Structures                            //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Global configuration resource for the staking pool.\n    // All objects with the 'key' ability must have an 'id' field of type UID as their first field.\n    public struct Config has key {\n        id: UID,               // Unique identifier for the configuration object.\n        admin: address,        // Administrator with special privileges.\n        reward_rate: u64,      // Reward rate per second.\n        lock_period: u64,      // Default lock period in seconds for staked funds.\n    }\n\n    // Resource representing an individual user's staked position.\n    public struct StakedPosition has key {\n        id: UID,                       // Unique identifier for this position.\n        owner: address,                // Owner of the staked position.\n        deposit: u64,                  // Amount staked (in native SUI units).\n        last_update: u64,              // Timestamp of the last rewards update.\n        lock_until: u64,               // Timestamp until which unstaking is locked.\n        delegated_validator: address,  // The validator to which this stake is delegated.\n    }\n\n    // Resource representing the liquid staking token minted alongside staking.\n    public struct LiquidStakedToken has key, store {\n        id: UID,         // Unique identifier for the token.\n        owner: address,  // Owner of the liquid token.\n        amount: u64,     // The staked amount represented by this token.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Initialization Function                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Entry function to initialize the staking pool configuration.\n    // Instead of using the built-in move_to (which is unavailable in this context),\n    // this function returns the created Config resource. The caller is responsible\n    // for publishing the returned object.\n    public entry fun init_config(admin: &signer, reward_rate: u64, lock_period: u64, ctx: &mut TxContext): Config {\n        let config = Config {\n            id: new_uid(ctx),\n            // Use the transaction context's sender as the admin address.\n            admin: TxContext::sender(ctx),\n            reward_rate,\n            lock_period,\n        };\n        config\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Staking Functionality                         //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Stake function:\n    // Allows a user to stake a specified amount and delegate their stake to a chosen validator.\n    //\n    // Parameters:\n    // - staker: The signer initiating the stake.\n    // - deposit: The amount to stake.\n    // - delegate: The address of the validator to delegate to.\n    // - lock: A flag indicating if the stake should be locked for the configured period.\n    // - current_time: The current timestamp.\n    // - config: A reference to the global configuration.\n    // - ctx: Transaction context used for generating unique IDs.\n    //\n    // Returns:\n    // - A new StakedPosition resource representing the user's staked funds.\n    // - A corresponding LiquidStakedToken resource minted to represent the liquid stake.\n    public fun stake(\n        _staker: &signer,\n        deposit: u64,\n        delegate: address,\n        lock: bool,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): (StakedPosition, LiquidStakedToken) {\n        // Ensure the deposit amount is greater than zero.\n        check(deposit > 0, E_INSUFFICIENT_AMOUNT);\n\n        // Retrieve the caller's address from the transaction context.\n        let owner = TxContext::sender(ctx);\n        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };\n\n        // Create a new staked position with a unique identifier.\n        let position = StakedPosition {\n            id: new_uid(ctx),\n            owner,\n            deposit,\n            last_update: current_time,\n            lock_until,\n            delegated_validator: delegate,\n        };\n\n        // Mint a liquid staking token with a unique identifier.\n        let liquid = LiquidStakedToken {\n            id: new_uid(ctx),\n            owner,\n            amount: deposit,\n        };\n\n        (position, liquid)\n    }\n\n    // Internal helper function to accrue rewards on a staked position.\n    // Rewards are computed based on the elapsed time since the last update.\n    // This function updates the last_update field of the position and returns\n    // the computed reward amount.\n    fun accrue_rewards(position: &mut StakedPosition, current_time: u64, reward_rate: u64): u64 {\n        let elapsed: u64 = current_time - position.last_update;\n        let reward: u64 = elapsed * reward_rate;\n        position.last_update = current_time;\n        reward\n    }\n\n    // Claim rewards function:\n    // Allows the owner of a staked position to claim accrued rewards without unstaking.\n    // Preconditions:\n    // - The caller must be the owner of the staked position.\n    //\n    // Returns the amount of rewards accrued since the last claim.\n    public fun claim_rewards(\n        _staker: &signer,\n        position: &mut StakedPosition,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): u64 {\n        let caller = TxContext::sender(ctx);\n        check(caller == position.owner, E_NOT_OWNER);\n\n        let reward: u64 = accrue_rewards(position, current_time, config.reward_rate);\n        reward\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Unstaking Functionality                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Unstake function:\n    // Allows a user to redeem their staked funds along with any accrued rewards.\n    //\n    // Preconditions:\n    // - The caller must be the owner of both the staked position and its corresponding liquid token.\n    // - The current time must be greater than or equal to the lock_until timestamp.\n    //\n    // Postconditions:\n    // - Both the liquid token and staked position resources are consumed.\n    // - Returns the total amount (original deposit plus accrued rewards).\n    public fun unstake(\n        _staker: &signer,\n        position: StakedPosition,\n        liquid: LiquidStakedToken,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): u64 {\n        let caller = TxContext::sender(ctx);\n        check(caller == position.owner, E_NOT_OWNER);\n        check(caller == liquid.owner, E_NOT_OWNER);\n        check(current_time >= position.lock_until, ELOCKED);\n\n        // Calculate accrued rewards from the last update until now.\n        let reward: u64 = (current_time - position.last_update) * config.reward_rate;\n        let total_amount: u64 = position.deposit + reward;\n\n        // Resources (position and liquid token) are consumed when they go out of scope.\n        total_amount\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Helper Functions                              //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Helper function to check a condition and abort with the specified error code if false.\n    fun check(condition: bool, error_code: u64) {\n        if (!condition) {\n            abort error_code;\n        }\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:23\n  \u2502\n5 \u2502     use sui::object::{UID, new_uid};\n  \u2502                       ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:5:28\n  \u2502\n5 \u2502     use sui::object::{UID, new_uid};\n  \u2502                            ^^^^^^^ Invalid 'use'. Unbound member 'new_uid' in module 'sui::object'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13\n  \u2502\n5 \u2502 module sui::object;\n  \u2502             ------ Module 'sui::object' declared here\n\nerror[Sui E02002]: invalid 'entry' function signature\n   \u250c\u2500 ./sources/temp_contract.move:56:12\n   \u2502\n24 \u2502     public struct Config has key {\n   \u2502                   ------ To satisfy the constraint, the 'drop' ability would need to be added here\n   \u00b7\n56 \u2502     public entry fun init_config(admin: &signer, reward_rate: u64, lock_period: u64, ctx: &mut TxContext): Config {\n   \u2502            ^^^^^                                                                                           ------ The type 'temp_addr::my_module::Config' does not have the ability 'drop'\n   \u2502            \u2502                                                                                                \n   \u2502            Invalid return type for entry function 'init_config'\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:56:34\n   \u2502\n56 \u2502     public entry fun init_config(admin: &signer, reward_rate: u64, lock_period: u64, ctx: &mut TxContext): Config {\n   \u2502                                  ^^^^^ Unused parameter 'admin'. Consider removing or prefixing with an underscore: '_admin'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:58:17\n   \u2502\n58 \u2502             id: new_uid(ctx),\n   \u2502                 ^^^^^^^ Unbound function 'new_uid' in current scope\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:60:20\n   \u2502\n60 \u2502             admin: TxContext::sender(ctx),\n   \u2502                    ^^^^^^^^^ Invalid construction. Expected an enum\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n   \u2502\n21 \u2502 public struct TxContext has drop {\n   \u2502               --------- But 'TxContext' is an struct\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:99:21\n   \u2502\n99 \u2502         let owner = TxContext::sender(ctx);\n   \u2502                     ^^^^^^^^^ Invalid construction. Expected an enum\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n   \u2502\n21 \u2502 public struct TxContext has drop {\n   \u2502               --------- But 'TxContext' is an struct\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:104:17\n    \u2502\n104 \u2502             id: new_uid(ctx),\n    \u2502                 ^^^^^^^ Unbound function 'new_uid' in current scope\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:114:17\n    \u2502\n114 \u2502             id: new_uid(ctx),\n    \u2502                 ^^^^^^^ Unbound function 'new_uid' in current scope\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:146:22\n    \u2502\n146 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:175:22\n    \u2502\n175 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\n",
+      "metadata": {
+        "iteration": 3,
+        "timestamp": 1740790603.23454,
+        "error_stats": {
+          "errors": 12,
+          "compiler_warnings": 3,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E03003": {
+            "count": 1,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "N02002": {
+            "count": 1,
+            "message": "invalid 'entry' function signature",
+            "level": "NonblockingError"
+          },
+          "W02009": {
+            "count": 1,
+            "message": "unused variable",
+            "level": "Warning"
+          },
+          "E05003": {
+            "count": 3,
+            "message": "unbound unscoped name",
+            "level": "BlockingError"
+          },
+          "E06003": {
+            "count": 4,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import necessary modules.\n    use sui::tx_context::TxContext;\n    use sui::object::UID;\n    use 0x1::signer;\n\n    // Declare the native move_to function to publish an object to an account.\n    native public fun move_to<T: store>(acc: &signer, obj: T);\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Error Codes                                //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Error code for attempting to unstake before the lock period expires.\n    const ELOCKED: u64 = 1;\n    // Error code when an operation is attempted by a non-owner.\n    const E_NOT_OWNER: u64 = 2;\n    // Error code for providing an insufficient deposit amount.\n    const E_INSUFFICIENT_AMOUNT: u64 = 3;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Data Structures                            //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Global configuration resource for the staking pool.\n    // Note: The 'drop' ability is added to allow the object to be safely stored and later consumed.\n    public struct Config has key, drop {\n        id: UID,            // Unique identifier for the configuration object.\n        admin: address,     // Administrator with special privileges.\n        reward_rate: u64,   // Reward rate per second.\n        lock_period: u64,   // Default lock period (in seconds) for staked funds.\n    }\n\n    // Resource representing an individual user's staked position.\n    public struct StakedPosition has key, drop {\n        id: UID,                      // Unique identifier for this position.\n        owner: address,               // Owner of the staked position.\n        deposit: u64,                 // Amount staked.\n        last_update: u64,             // Timestamp of the last rewards update.\n        lock_until: u64,              // Timestamp until which unstaking is locked.\n        delegated_validator: address, // The validator to which this stake is delegated.\n    }\n\n    // Resource representing the liquid staking token.\n    // This token is minted upon staking and represents the staked amount.\n    public struct LiquidStakedToken has key, store {\n        id: UID,         // Unique identifier for the token.\n        owner: address,  // Owner of the liquid token.\n        amount: u64,     // The staked amount represented by this token.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Initialization Function                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Entry function to initialize the staking pool configuration.\n    // It creates a Config resource and publishes it to the admin's account.\n    public entry fun init_config(admin: &signer, reward_rate: u64, lock_period: u64, ctx: &mut TxContext) {\n        // Generate a unique identifier for the Config.\n        let config_uid = UID::new(ctx);\n        let config = Config {\n            id: config_uid,\n            admin: signer::address_of(admin),\n            reward_rate,\n            lock_period,\n        };\n        // Publish the Config object to the admin's account.\n        move_to(admin, config);\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Staking Functionality                         //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Stake function:\n    // Allows a user to stake a specified deposit and delegate their stake to a chosen validator.\n    //\n    // Parameters:\n    // - _staker: The signer initiating the stake.\n    // - deposit: The amount to stake.\n    // - delegate: The address of the validator to delegate to.\n    // - lock: A flag indicating if the stake should be locked for the configured period.\n    // - current_time: The current timestamp.\n    // - config: A reference to the global configuration.\n    // - ctx: Transaction context used for generating unique IDs.\n    //\n    // Returns:\n    // - A new StakedPosition resource representing the user's staked funds.\n    // - A corresponding LiquidStakedToken resource representing the liquid stake.\n    public fun stake(\n        _staker: &signer,\n        deposit: u64,\n        delegate: address,\n        lock: bool,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): (StakedPosition, LiquidStakedToken) {\n        // Ensure a positive deposit amount.\n        check(deposit > 0, E_INSUFFICIENT_AMOUNT);\n\n        // Retrieve the staker's address.\n        let owner = signer::address_of(_staker);\n        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };\n\n        // Create a new staked position with a unique identifier.\n        let pos_uid = UID::new(ctx);\n        let position = StakedPosition {\n            id: pos_uid,\n            owner,\n            deposit,\n            last_update: current_time,\n            lock_until,\n            delegated_validator: delegate,\n        };\n\n        // Mint a liquid staking token with a unique identifier.\n        let liq_uid = UID::new(ctx);\n        let liquid = LiquidStakedToken {\n            id: liq_uid,\n            owner,\n            amount: deposit,\n        };\n\n        (position, liquid)\n    }\n\n    // Internal helper function to accumulate rewards over time.\n    // It computes rewards based on the elapsed time since the last update,\n    // updates the last_update timestamp, and returns the computed reward.\n    fun accrue_rewards(position: &mut StakedPosition, current_time: u64, reward_rate: u64): u64 {\n        let elapsed = current_time - position.last_update;\n        let reward = elapsed * reward_rate;\n        position.last_update = current_time;\n        reward\n    }\n\n    // Claim rewards function:\n    // Allows the owner of a staked position to claim accrued rewards without unstaking.\n    //\n    // Parameters:\n    // - _staker: The signer claiming rewards.\n    // - position: A mutable reference to the staked position.\n    // - current_time: The current timestamp.\n    // - config: A reference to the global configuration.\n    //\n    // Returns the amount of rewards accrued since the last claim.\n    public fun claim_rewards(\n        _staker: &signer,\n        position: &mut StakedPosition,\n        current_time: u64,\n        config: &Config\n    ): u64 {\n        let caller = signer::address_of(_staker);\n        // Verify ownership.\n        check(caller == position.owner, E_NOT_OWNER);\n        let reward = accrue_rewards(position, current_time, config.reward_rate);\n        reward\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Unstaking Functionality                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Unstake function:\n    // Allows a user to redeem their staked funds along with accrued rewards.\n    //\n    // Preconditions:\n    // - The caller must be the owner of both the staked position and its associated liquid token.\n    // - The current timestamp must be greater than or equal to the lock_until timestamp.\n    //\n    // Postconditions:\n    // - Consumes both the staked position and liquid token resources.\n    // - Returns the total amount (original deposit plus accrued rewards).\n    public fun unstake(\n        _staker: &signer,\n        position: StakedPosition,\n        liquid: LiquidStakedToken,\n        current_time: u64,\n        config: &Config\n    ): u64 {\n        let caller = signer::address_of(_staker);\n        check(caller == position.owner, E_NOT_OWNER);\n        check(caller == liquid.owner, E_NOT_OWNER);\n        check(current_time >= position.lock_until, ELOCKED);\n        let reward = (current_time - position.last_update) * config.reward_rate;\n        let total_amount = position.deposit + reward;\n        total_amount\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Helper Functions                              //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Helper function to validate a condition and abort with a specific error code if false.\n    fun check(condition: bool, error_code: u64) {\n        if (!condition) {\n            abort error_code;\n        }\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:22\n  \u2502\n5 \u2502     use sui::object::UID;\n  \u2502                      ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:6:9\n  \u2502\n6 \u2502     use 0x1::signer;\n  \u2502         ^^^^^^^^^^^ Invalid 'use'. Unbound module: '0x1::signer'\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:29:13\n   \u2502\n29 \u2502         id: UID,            // Unique identifier for the configuration object.\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:37:13\n   \u2502\n37 \u2502         id: UID,                      // Unique identifier for this position.\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:61:26\n   \u2502\n61 \u2502         let config_uid = UID::new(ctx);\n   \u2502                          ^^^ Invalid construction. Expected an enum\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- But 'UID' is an struct\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:64:20\n   \u2502\n64 \u2502             admin: signer::address_of(admin),\n   \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:69:9\n   \u2502  \n 9 \u2502       native public fun move_to<T: store>(acc: &signer, obj: T);\n   \u2502                                    ----- 'store' constraint declared here\n   \u00b7  \n28 \u2502       public struct Config has key, drop {\n   \u2502                     ------ To satisfy the constraint, the 'store' ability would need to be added here\n   \u00b7  \n62 \u2502           let config = Config {\n   \u2502 \u256d\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'\n63 \u2502 \u2502             id: config_uid,\n64 \u2502 \u2502             admin: signer::address_of(admin),\n65 \u2502 \u2502             reward_rate,\n66 \u2502 \u2502             lock_period,\n67 \u2502 \u2502         };\n   \u2502 \u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500' The type 'temp_addr::my_module::Config' does not have the ability 'store'\n68 \u2502           // Publish the Config object to the admin's account.\n69 \u2502           move_to(admin, config);\n   \u2502           ^^^^^^^^^^^^^^^^^^^^^^ 'store' constraint not satisifed\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:104:21\n    \u2502\n104 \u2502         let owner = signer::address_of(_staker);\n    \u2502                     ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:108:23\n    \u2502\n108 \u2502         let pos_uid = UID::new(ctx);\n    \u2502                       ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:119:23\n    \u2502\n119 \u2502         let liq_uid = UID::new(ctx);\n    \u2502                       ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:155:22\n    \u2502\n155 \u2502         let caller = signer::address_of(_staker);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:183:22\n    \u2502\n183 \u2502         let caller = signer::address_of(_staker);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\n",
+      "metadata": {
+        "iteration": 4,
+        "timestamp": 1740790646.6632152,
+        "error_stats": {
+          "errors": 13,
+          "compiler_warnings": 2,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "N01005": {
+            "count": 3,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          },
+          "E06003": {
+            "count": 7,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import necessary modules from the Sui framework.\n    use sui::tx_context::TxContext;\n    use sui::object::UID;\n    use sui::object::uid;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Error Codes                                //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Error code for attempting to unstake before the lock period expires.\n    const ELOCKED: u64 = 1;\n    // Error code when an operation is attempted by a non-owner.\n    const E_NOT_OWNER: u64 = 2;\n    // Error code for providing an insufficient deposit amount.\n    const E_INSUFFICIENT_AMOUNT: u64 = 3;\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                             Data Structures                            //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Global configuration resource for the staking pool.\n    // Objects published on-chain must have the `key` and `store` abilities.\n    public struct Config has key, store {\n        id: UID,              // Unique identifier for the configuration object.\n        admin: address,       // Administrator of the staking pool.\n        reward_rate: u64,     // Reward rate per second.\n        lock_period: u64,     // Default lock period (in seconds) for staked funds.\n    }\n\n    // Resource representing an individual user's staked position.\n    public struct StakedPosition has key, store {\n        id: UID,                      // Unique identifier for the position.\n        owner: address,               // Owner of the staked position.\n        deposit: u64,                 // Amount staked (in SUI units).\n        last_update: u64,             // Timestamp of the last rewards update.\n        lock_until: u64,              // Timestamp until which unstaking remains locked.\n        delegated_validator: address, // The validator to which the stake is delegated.\n    }\n\n    // Resource representing the liquid staking token.\n    // This token is minted when a user stakes, representing a tradable share of the stake.\n    public struct LiquidStakedToken has key, store {\n        id: UID,         // Unique identifier for the token.\n        owner: address,  // Owner of the liquid token.\n        amount: u64,     // The staked amount represented by this token.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Native Publishing Function                    //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Native function to publish an object to an account.\n    // The Move framework provides an intrinsic implementation.\n    native public fun move_to<T: store>(acc: &signer, obj: T);\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Initialization Function                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Entry function to initialize the staking pool configuration.\n    // The caller becomes the administrator.\n    public entry fun init_config(admin: &signer, reward_rate: u64, lock_period: u64, ctx: &mut TxContext) {\n        let config_uid = uid::new(ctx);\n        // In Sui Move, the admin's address is inferred from the transaction context.\n        let admin_addr = TxContext::sender(ctx);\n        let config = Config {\n            id: config_uid,\n            admin: admin_addr,\n            reward_rate,\n            lock_period,\n        };\n        move_to(admin, config);\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Staking Functionality                         //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Stake function:\n    // Allows a user to stake a specified deposit and delegate to a chosen validator.\n    // Parameters:\n    // - _staker: The signer initiating the stake.\n    // - deposit: The amount to stake.\n    // - delegate: The validator's address.\n    // - lock: If true, the staked funds are locked for the configured period.\n    // - current_time: The current timestamp.\n    // - config: Reference to the global configuration.\n    // - ctx: Transaction context for UID generation.\n    // Returns:\n    // - A new StakedPosition resource.\n    // - A LiquidStakedToken representing the staked amount.\n    public fun stake(\n        _staker: &signer,\n        deposit: u64,\n        delegate: address,\n        lock: bool,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): (StakedPosition, LiquidStakedToken) {\n        check(deposit > 0, E_INSUFFICIENT_AMOUNT);\n        let owner = TxContext::sender(ctx);\n        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };\n        let pos_uid = uid::new(ctx);\n        let position = StakedPosition {\n            id: pos_uid,\n            owner,\n            deposit,\n            last_update: current_time,\n            lock_until,\n            delegated_validator: delegate,\n        };\n        let liq_uid = uid::new(ctx);\n        let liquid = LiquidStakedToken {\n            id: liq_uid,\n            owner,\n            amount: deposit,\n        };\n        (position, liquid)\n    }\n\n    // Internal helper to accrue rewards.\n    // Computes rewards based on the elapsed time since the last update.\n    fun accrue_rewards(position: &mut StakedPosition, current_time: u64, reward_rate: u64): u64 {\n        let elapsed = current_time - position.last_update;\n        let reward = elapsed * reward_rate;\n        position.last_update = current_time;\n        reward\n    }\n\n    // Claim rewards function:\n    // Allows the owner of a staked position to claim accrued rewards without unstaking.\n    // Parameters:\n    // - _staker: The signer claiming rewards.\n    // - position: Mutable reference to the staked position.\n    // - current_time: The current timestamp.\n    // - config: Reference to the global configuration.\n    // - ctx: Transaction context to determine the caller.\n    // Returns: The accrued reward amount.\n    public fun claim_rewards(\n        _staker: &signer,\n        position: &mut StakedPosition,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): u64 {\n        let caller = TxContext::sender(ctx);\n        check(caller == position.owner, E_NOT_OWNER);\n        let reward = accrue_rewards(position, current_time, config.reward_rate);\n        reward\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Unstaking Functionality                       //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Unstake function:\n    // Allows a user to redeem their staked funds along with accrued rewards.\n    // Preconditions:\n    // - The caller must own both the staked position and associated liquid token.\n    // - The current time must be at or after the lock_until timestamp.\n    // Consumes the position and token.\n    // Returns: The total amount (deposit plus accrued rewards).\n    public fun unstake(\n        _staker: &signer,\n        position: StakedPosition,\n        liquid: LiquidStakedToken,\n        current_time: u64,\n        config: &Config,\n        ctx: &mut TxContext\n    ): u64 {\n        let caller = TxContext::sender(ctx);\n        check(caller == position.owner, E_NOT_OWNER);\n        check(caller == liquid.owner, E_NOT_OWNER);\n        check(current_time >= position.lock_until, ELOCKED);\n        let reward = (current_time - position.last_update) * config.reward_rate;\n        let total_amount = position.deposit + reward;\n        total_amount\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    //                          Helper Function                               //\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Utility function to check conditions and abort with a given error code if false.\n    fun check(condition: bool, error_code: u64) {\n        if (!condition) {\n            abort error_code;\n        }\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:22\n  \u2502\n5 \u2502     use sui::object::UID;\n  \u2502                      ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:6:22\n  \u2502\n6 \u2502     use sui::object::uid;\n  \u2502                      ^^^ Invalid 'use'. Unbound member 'uid' in module 'sui::object'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13\n  \u2502\n5 \u2502 module sui::object;\n  \u2502             ------ Module 'sui::object' declared here\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:65:26\n   \u2502\n65 \u2502         let config_uid = uid::new(ctx);\n   \u2502                          ^^^ Could not resolve the name 'uid'\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:67:26\n   \u2502\n67 \u2502         let admin_addr = TxContext::sender(ctx);\n   \u2502                          ^^^^^^^^^ Invalid construction. Expected an enum\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n   \u2502\n21 \u2502 public struct TxContext has drop {\n   \u2502               --------- But 'TxContext' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:104:21\n    \u2502\n104 \u2502         let owner = TxContext::sender(ctx);\n    \u2502                     ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:106:23\n    \u2502\n106 \u2502         let pos_uid = uid::new(ctx);\n    \u2502                       ^^^ Could not resolve the name 'uid'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:115:23\n    \u2502\n115 \u2502         let liq_uid = uid::new(ctx);\n    \u2502                       ^^^ Could not resolve the name 'uid'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:149:22\n    \u2502\n149 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:174:22\n    \u2502\n174 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\n",
+      "metadata": {
+        "iteration": 5,
+        "timestamp": 1740790682.989098,
+        "error_stats": {
+          "errors": 10,
+          "compiler_warnings": 2,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E03003": {
+            "count": 1,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "E06003": {
+            "count": 7,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          }
+        }
+      }
+    }
+  ],
+  "error_histogram": {
+    "N02013": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "W21002": [
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "E02003": [
+      1,
+      1,
+      0,
+      1,
+      0
+    ],
+    "N03001": [
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "N07002": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "W11009": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "N03002": [
+      5,
+      0,
+      0,
+      0,
+      0
+    ],
+    "W02009": [
+      5,
+      3,
+      1,
+      0,
+      0
+    ],
+    "E06003": [
+      6,
+      7,
+      4,
+      7,
+      7
+    ],
+    "E05003": [
+      2,
+      1,
+      3,
+      0,
+      0
+    ],
+    "W08009": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "E11003": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "E03003": [
+      0,
+      1,
+      1,
+      0,
+      1
+    ],
+    "N02002": [
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "N01005": [
+      0,
+      0,
+      0,
+      3,
+      0
+    ]
+  },
+  "iterations_data": [
+    {
+      "iteration": 1,
+      "total_errors": 29,
+      "error_breakdown": {
+        "N02013": {
+          "count": 1,
+          "message": "feature is deprecated in specified edition",
+          "level": "NonblockingError"
+        },
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "N03001": {
+          "count": 3,
+          "message": "invalid modifier",
+          "level": "NonblockingError"
+        },
+        "N07002": {
+          "count": 1,
+          "message": "invalid object declaration",
+          "level": "NonblockingError"
+        },
+        "W11009": {
+          "count": 1,
+          "message": "unused constant",
+          "level": "Warning"
+        },
+        "N03002": {
+          "count": 5,
+          "message": "invalid 'init' function",
+          "level": "NonblockingError"
+        },
+        "W02009": {
+          "count": 5,
+          "message": "unused variable",
+          "level": "Warning"
+        },
+        "E06003": {
+          "count": 6,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "E05003": {
+          "count": 2,
+          "message": "unbound unscoped name",
+          "level": "BlockingError"
+        },
+        "W08009": {
+          "count": 1,
+          "message": "unused function",
+          "level": "Warning"
+        },
+        "E11003": {
+          "count": 1,
+          "message": "invalid use of reserved name",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "total_errors": 15,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E03003": {
+          "count": 1,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "E06003": {
+          "count": 7,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "E05003": {
+          "count": 1,
+          "message": "unbound unscoped name",
+          "level": "BlockingError"
+        },
+        "W02009": {
+          "count": 3,
+          "message": "unused variable",
+          "level": "Warning"
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "total_errors": 12,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E03003": {
+          "count": 1,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "N02002": {
+          "count": 1,
+          "message": "invalid 'entry' function signature",
+          "level": "NonblockingError"
+        },
+        "W02009": {
+          "count": 1,
+          "message": "unused variable",
+          "level": "Warning"
+        },
+        "E05003": {
+          "count": 3,
+          "message": "unbound unscoped name",
+          "level": "BlockingError"
+        },
+        "E06003": {
+          "count": 4,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "total_errors": 13,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "N01005": {
+          "count": 3,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        },
+        "E06003": {
+          "count": 7,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "total_errors": 10,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E03003": {
+          "count": 1,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "E06003": {
+          "count": 7,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        }
+      }
+    }
+  ],
+  "total_iterations": 5
+}

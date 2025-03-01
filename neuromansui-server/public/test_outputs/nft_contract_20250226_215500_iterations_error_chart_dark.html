@@ -1,0 +1,479 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sui Move Contract Analysis</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/rust.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/toml.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/markdown.min.js"></script>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #111827;
+                    color: #F9FAFB;
+                }
+                .container {
+                    width: 95%;
+                    margin: 20px auto;
+                    min-height: 85vh; /* Ensure container takes up most of the viewport height */
+                }
+                .tab {
+                    overflow: hidden;
+                    border: 1px solid #2D3748;
+                    background-color: #1F2937;
+                    border-radius: 5px 5px 0 0;
+                }
+                .tab button {
+                    background-color: inherit;
+                    float: left;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 14px 16px;
+                    transition: 0.3s;
+                    font-size: 16px;
+                    color: #F9FAFB;
+                }
+                .tab button:hover {
+                    background-color: #374151;
+                }
+                .tab button.active {
+                    background-color: #4B5563;
+                }
+                .tabcontent {
+                    display: none;
+                    padding: 6px 12px;
+                    border: 1px solid #2D3748;
+                    border-top: none;
+                    border-radius: 0 0 5px 5px;
+                    animation: fadeEffect 1s;
+                    background-color: #1F2937;
+                    min-height: 70vh; /* Ensure tab content area is tall enough */
+                }
+                @keyframes fadeEffect {
+                    from {opacity: 0;}
+                    to {opacity: 1;}
+                }
+                pre {
+                    margin: 0;
+                    padding: 16px;
+                    overflow: auto;
+                    border-radius: 4px;
+                }
+                code {
+                    font-family: 'Courier New', Courier, monospace;
+                }
+                .hljs-line-numbers {
+                    text-align: right;
+                    padding-right: 10px;
+                    color: #6B7280;
+                    border-right: 1px solid #4B5563;
+                    margin-right: 10px;
+                    user-select: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 style="text-align: center; color: #3B82F6;">Sui Move Contract Analysis</h1>
+                
+                <div class="tab" id="tabs">
+                    <button class="tablinks active" id="ErrorChartTab">Error Chart</button>
+        
+                    <button class="tablinks" id="Iteration1Tab">Iteration 1</button>
+                
+                </div>
+                
+                <div id="ErrorChart" class="tabcontent" style="display: block;">
+                    <div id="plotly-chart"></div>
+        
+                    <div class="prompt-console" style="margin-top: 30px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <div class="console-header" style="background-color: #1E293B; padding: 10px 15px; border-bottom: 1px solid #475569;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #EF4444; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #F59E0B; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #10B981; margin-right: 8px;"></div>
+                                <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 14px;">Initial Prompt</span>
+                            </div>
+                        </div>
+                        <div class="console-body" style="background-color: #1E293B; padding: 15px; max-height: 350px; overflow-y: auto;">
+                            <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 14px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that implements an NFT collection with the following features:
+
+- A custom NFT type with metadata fields (name, description, image URL)
+- Minting functionality with proper access control
+- Transfer functionality
+- Ability to update metadata by the owner
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+</pre>
+                        </div>
+                    </div>
+            
+                </div>
+        
+                <div id="Iteration1" class="tabcontent">
+                    <h3>Contract Source - Iteration 1</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 1</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #1E293B; padding: 8px 12px; border-bottom: 1px solid #475569;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #1E293B; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that implements an NFT collection with the following features:
+
+- A custom NFT type with metadata fields (name, description, image URL)
+- Minting functionality with proper access control
+- Transfer functionality
+- Ability to update metadata by the owner
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module 0x0::my_module {
+
+    // Import modules for UID generation, signing, and transaction context.
+    use sui::object::{self, UID};
+    use sui::tx_context::TxContext;
+    use std::signer;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // DATA STRUCTURES
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Metadata struct to hold NFT metadata.
+    // Using vector&lt;u8&gt; for string data to remain generic and efficient.
+    struct Metadata has copy, drop, store {
+        name: vector&lt;u8&gt;,
+        description: vector&lt;u8&gt;,
+        image_url: vector&lt;u8&gt;,
+    }
+
+    // NFT resource representing a unique token.
+    // The &#039;key&#039; ability enables this resource to have a unique ID,
+    // while &#039;store&#039; allows the object to be stored on-chain.
+    struct NFT has key, store {
+        id: UID,
+        metadata: Metadata,
+        // The &#039;owner&#039; field tracks the current owner of the NFT.
+        owner: address,
+    }
+
+    // MinterCap resource for access control.
+    // Only accounts holding a MinterCap can mint new NFTs.
+    struct MinterCap has key, store {}
+
+    ////////////////////////////////////////////////////////////////////////////
+    // INITIALIZATION FUNCTION
+    ////////////////////////////////////////////////////////////////////////////
+
+    // init_module publishes a MinterCap resource into the caller&#039;s account.
+    // This function should be called once by the contract administrator.
+    public fun init_module(account: &amp;signer) {
+        // Only publish a MinterCap if one is not already present.
+        if (!exists&lt;MinterCap&gt;(signer::address_of(account))) {
+            move_to(account, MinterCap {});
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // MINTING FUNCTIONALITY
+    ////////////////////////////////////////////////////////////////////////////
+
+    // mint_nft allows minting of a new NFT.
+    // Only accounts holding a MinterCap (hence authorized) can call this function.
+    // The newly minted NFT is automatically deposited in the minter&#039;s account.
+    public fun mint_nft(
+        minter: &amp;signer,
+        ctx: &amp;mut TxContext,
+        name: vector&lt;u8&gt;,
+        description: vector&lt;u8&gt;,
+        image_url: vector&lt;u8&gt;
+    ) {
+        // Verify that the caller has the minting capability.
+        assert!(exists&lt;MinterCap&gt;(signer::address_of(minter)), 100);
+
+        // Generate a new unique identifier for the NFT.
+        let new_uid = object::new_uid(ctx);
+
+        // Construct the metadata for the NFT.
+        let metadata = Metadata { name, description, image_url };
+
+        // Create the NFT with the owner set to the minter&#039;s address.
+        let nft = NFT { id: new_uid, metadata, owner: signer::address_of(minter) };
+
+        // Deposit the NFT into the minter&#039;s account.
+        move_to(minter, nft);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // TRANSFER FUNCTIONALITY
+    ////////////////////////////////////////////////////////////////////////////
+
+    // transfer_nft transfers an NFT from its current owner to a new owner.
+    // This function takes ownership of the NFT resource from the caller and
+    // returns an updated NFT with its owner field changed to the recipient.
+    public fun transfer_nft(
+        owner: &amp;signer,
+        nft: NFT,
+        recipient: address
+    ) : NFT {
+        // Ensure that only the owner can transfer the NFT.
+        assert!(nft.owner == signer::address_of(owner), 101);
+
+        // Update the NFT&#039;s owner to the recipient.
+        let new_nft = NFT { id: nft.id, metadata: nft.metadata, owner: recipient };
+
+        // Return the updated NFT.
+        new_nft
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // UPDATE METADATA FUNCTIONALITY
+    ////////////////////////////////////////////////////////////////////////////
+
+    // update_metadata allows the owner of an NFT to update its metadata.
+    // The function checks that the caller is the NFT&#039;s owner and then returns
+    // an updated NFT with new metadata.
+    public fun update_metadata(
+        owner: &amp;signer,
+        nft: NFT,
+        new_name: vector&lt;u8&gt;,
+        new_description: vector&lt;u8&gt;,
+        new_image_url: vector&lt;u8&gt;
+    ) : NFT {
+        // Ensure that only the owner can update the metadata.
+        assert!(nft.owner == signer::address_of(owner), 102);
+
+        // Construct the updated metadata.
+        let new_metadata = Metadata { name: new_name, description: new_description, image_url: new_image_url };
+
+        // Create an updated NFT with the new metadata.
+        let updated_nft = NFT { id: nft.id, metadata: new_metadata, owner: nft.owner };
+
+        // Return the updated NFT.
+        updated_nft
+    }
+}</code></pre>
+                </div>
+                
+                <script>
+                    // Legacy function for backward compatibility
+                    function openTab(evt, tabName) {
+                        var i, tabcontent, tablinks;
+                        tabcontent = document.getElementsByClassName("tabcontent");
+                        for (i = 0; i < tabcontent.length; i++) {
+                            tabcontent[i].style.display = "none";
+                        }
+                        tablinks = document.getElementsByClassName("tablinks");
+                        for (i = 0; i < tablinks.length; i++) {
+                            tablinks[i].className = tablinks[i].className.replace(" active", "");
+                        }
+                        document.getElementById(tabName).style.display = "block";
+                        evt.currentTarget.className += " active";
+                    }
+
+                    // Tab handling functions
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // First, hide all tab contents
+                        var tabcontents = document.getElementsByClassName("tabcontent");
+                        for (var i = 0; i < tabcontents.length; i++) {
+                            tabcontents[i].style.display = "none";
+                        }
+                        
+                        // Show the default tab
+                        document.getElementById("ErrorChart").style.display = "block";
+                        
+                        // Setup click handlers for tabs
+                        var tabs = document.getElementById("tabs").getElementsByTagName("button");
+                        for (var i = 0; i < tabs.length; i++) {
+                            tabs[i].addEventListener("click", function() {
+                                // Remove active class from all tabs
+                                for (var j = 0; j < tabs.length; j++) {
+                                    tabs[j].className = tabs[j].className.replace(" active", "");
+                                }
+                                
+                                // Add active class to clicked tab
+                                this.className += " active";
+                                
+                                // Hide all tab contents
+                                for (var j = 0; j < tabcontents.length; j++) {
+                                    tabcontents[j].style.display = "none";
+                                }
+                                
+                                // Show the corresponding tab content
+                                var tabId = this.id.replace("Tab", "");
+                                document.getElementById(tabId).style.display = "block";
+                            });
+                        }
+                    });
+                    
+                    // Add line numbers to code blocks
+                    function addLineNumbers() {
+                        var codeBlocks = document.querySelectorAll('pre code');
+                        codeBlocks.forEach(function(codeBlock) {
+                            var lines = codeBlock.innerHTML.split('\n');
+                            var numbered = lines.map(function(line, i) {
+                                return '<span class="hljs-line-numbers">' + (i + 1) + '</span>' + line;
+                            }).join('\n');
+                            codeBlock.innerHTML = numbered;
+                        });
+                    }
+                    
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize syntax highlighting
+                        hljs.highlightAll();
+                        // Add line numbers after highlighting
+                        addLineNumbers();
+                        
+                        // Process code blocks in prompts
+                        processPromptCodeBlocks();
+                    });
+                    
+                    // Function to process code blocks in prompts
+                    function processPromptCodeBlocks() {
+                        // Find all prompt pre elements
+                        const promptPres = document.querySelectorAll('.console-body pre');
+                        
+                        promptPres.forEach(function(pre) {
+                            try {
+                                // Use a safer string-based approach instead of regex
+                                let content = pre.innerHTML;
+                                let processed = content;
+                                
+                                // Find the start positions of all code blocks
+                                const codeBlockStarts = [];
+                                let searchPos = 0;
+                                let foundPos;
+                                
+                                while ((foundPos = content.indexOf("```", searchPos)) !== -1) {
+                                    codeBlockStarts.push(foundPos);
+                                    searchPos = foundPos + 3;
+                                }
+                                
+                                // Process code blocks in reverse order to avoid position shifts
+                                if (codeBlockStarts.length >= 2 && codeBlockStarts.length % 2 === 0) {
+                                    for (let i = codeBlockStarts.length - 2; i >= 0; i -= 2) {
+                                        const blockStart = codeBlockStarts[i];
+                                        const blockEnd = codeBlockStarts[i + 1];
+                                        
+                                        // Extract the entire block including markers
+                                        const fullBlock = content.substring(blockStart, blockEnd + 3);
+                                        
+                                        // Extract language (if any)
+                                        let lang = 'plaintext';
+                                        const firstLineEnd = fullBlock.indexOf('');
+                                        if (firstLineEnd > 3) { // There's content after the opening ```
+                                            lang = fullBlock.substring(3, firstLineEnd).trim() || 'plaintext';
+                                        }
+                                        
+                                        // Extract code content (between the markers)
+                                        const codeStart = fullBlock.indexOf('') + 1;
+                                        const codeEnd = fullBlock.lastIndexOf("```");
+                                        const code = fullBlock.substring(codeStart, codeEnd);
+                                        
+                                        // Create the replacement HTML
+                                        const replacement = `<div class="prompt-code-block" style="margin: 10px 0; border-radius: 4px; overflow: hidden;">
+                                          <div style="padding: 6px 10px; background-color: rgba(0,0,0,0.2); font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">${lang}</div>
+                                          <pre style="margin: 0; padding: 10px;"><code class="language-${lang}">${code}</code></pre>
+                                        </div>`;
+                                        
+                                        // Replace the code block with the HTML
+                                        processed = processed.replace(fullBlock, replacement);
+                                    }
+                                }
+                                
+                                if (content !== processed) {
+                                    pre.innerHTML = processed;
+                                    // Apply highlighting to the newly created code blocks
+                                    pre.querySelectorAll('code').forEach(function(block) {
+                                        hljs.highlightElement(block);
+                                    });
+                                }
+                            } catch (error) {
+                                console.log("Error processing code blocks:", error);
+                            }
+                        });
+                    }
+                </script>
+        
+                <script>
+                    var figure = {"data":[{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(25.0, 90.0%, 60.0%)"},"name":"Error: unbound module","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.5%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(28.333333333333332, 88.33333333333333%, 61.666666666666664%)"},"name":"Error: unbound module member","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.1%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[2],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(31.666666666666664, 86.66666666666667%, 63.333333333333336%)"},"name":"Error: unbound unscoped name","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound unscoped name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e18.2%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[4],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(35.0, 85.0%, 65.0%)"},"name":"Error: unexpected name in this position","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e22.7%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[5],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(0.0, 90.0%, 60.0%)"},"name":"Non-blocking Error: ability constraint not satisfied","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.1%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[2],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(5.0, 87.5%, 62.5%)"},"name":"Non-blocking Error: invalid modifier","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e13.6%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[3],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(10.0, 85.0%, 65.0%)"},"name":"Non-blocking Error: invalid object declaration","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid object declaration\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.5%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(40.0, 75.0%, 60.0%)"},"name":"Warning: unused variable","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.1%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[2],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(50.0, 70.0%, 65.0%)"},"name":"Warning: duplicate alias","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.1%\u003c\u002fb\u003e"],"x":["Iteration 1"],"y":[2],"type":"bar"},{"hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e\u003cbr\u003eTotal Errors: \u003cb\u003e%{y}\u003c\u002fb\u003e\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#EF4444","dash":"solid","width":3},"marker":{"color":"#B91C1C","size":10,"symbol":"diamond"},"mode":"lines+markers","name":"Total Errors","x":["Iteration 1"],"y":[22],"type":"scatter"}],"layout":{"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"annotations":[{"bgcolor":"rgba(31, 41, 55, 0.8)","bordercolor":"rgba(75, 85, 99, 0.5)","borderpad":10,"borderwidth":2,"font":{"color":"rgba(255, 255, 255, 0.4)","family":"Arial, sans-serif","size":14},"opacity":0.9,"showarrow":false,"text":"Sui Move Compiler Error Analysis","x":0.5,"xanchor":"right","xref":"paper","y":1.05,"yanchor":"top","yref":"paper"},{"font":{"color":"#F9FAFB","size":14},"showarrow":false,"text":"22","x":0,"y":23}],"title":{"font":{"size":24,"family":"Arial, sans-serif","color":"#3B82F6"},"text":"Evolution of Compiler Errors Across Iterations","y":0.95,"x":0.5,"xanchor":"center","yanchor":"top"},"xaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#F9FAFB"},"text":"Iteration"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(255, 255, 255, 0.1)","tickangle":0},"yaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#F9FAFB"},"text":"Number of Errors"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(255, 255, 255, 0.1)"},"legend":{"title":{"font":{"size":14,"family":"Arial, sans-serif","color":"#F9FAFB"},"text":"Error Types"},"bgcolor":"rgba(255, 255, 255, 0.1)","bordercolor":"rgba(255, 255, 255, 0.2)","borderwidth":1,"orientation":"v","yanchor":"middle","y":0.5,"xanchor":"left","x":1.02},"margin":{"t":100,"b":100,"l":100,"r":100},"font":{"family":"Arial, sans-serif","color":"#F9FAFB"},"barmode":"stack","hovermode":"closest","height":800,"paper_bgcolor":"#111827","plot_bgcolor":"#111827"}};
+                    Plotly.newPlot('plotly-chart', figure.data, figure.layout, {
+                        displayModeBar: true,
+                        responsive: true,
+                        displaylogo: false,
+                        toImageButtonOptions: {
+                            format: 'png',
+                            filename: 'error_chart_dark',
+                            height: 800,
+                            width: 1200,
+                            scale: 2
+                        }
+                    });
+                </script>
+            </div>
+        </body>
+        </html>
+        

@@ -1,0 +1,1573 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sui Move Contract Analysis</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/rust.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/toml.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/markdown.min.js"></script>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: white;
+                    color: #EF4444;
+                }
+                .container {
+                    width: 95%;
+                    margin: 20px auto;
+                    min-height: 85vh; /* Ensure container takes up most of the viewport height */
+                }
+                .tab {
+                    overflow: hidden;
+                    border: 1px solid #ccc;
+                    background-color: #f1f1f1;
+                    border-radius: 5px 5px 0 0;
+                }
+                .tab button {
+                    background-color: inherit;
+                    float: left;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 14px 16px;
+                    transition: 0.3s;
+                    font-size: 16px;
+                    color: #EF4444;
+                }
+                .tab button:hover {
+                    background-color: #ddd;
+                }
+                .tab button.active {
+                    background-color: #ccc;
+                }
+                .tabcontent {
+                    display: none;
+                    padding: 6px 12px;
+                    border: 1px solid #ccc;
+                    border-top: none;
+                    border-radius: 0 0 5px 5px;
+                    animation: fadeEffect 1s;
+                    background-color: #fff;
+                    min-height: 70vh; /* Ensure tab content area is tall enough */
+                }
+                @keyframes fadeEffect {
+                    from {opacity: 0;}
+                    to {opacity: 1;}
+                }
+                pre {
+                    margin: 0;
+                    padding: 16px;
+                    overflow: auto;
+                    border-radius: 4px;
+                }
+                code {
+                    font-family: 'Courier New', Courier, monospace;
+                }
+                .hljs-line-numbers {
+                    text-align: right;
+                    padding-right: 10px;
+                    color: #999;
+                    border-right: 1px solid #ddd;
+                    margin-right: 10px;
+                    user-select: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 style="text-align: center; color: #1E3A8A;">Sui Move Contract Analysis</h1>
+                
+                <div class="tab" id="tabs">
+                    <button class="tablinks active" id="ErrorChartTab">Error Chart</button>
+        
+                    <button class="tablinks" id="Iteration1Tab">Iteration 1</button>
+                
+                    <button class="tablinks" id="Iteration2Tab">Iteration 2</button>
+                
+                    <button class="tablinks" id="Iteration3Tab">Iteration 3</button>
+                
+                    <button class="tablinks" id="Iteration4Tab">Iteration 4</button>
+                
+                    <button class="tablinks" id="Iteration5Tab">Iteration 5</button>
+                
+                </div>
+                
+                <div id="ErrorChart" class="tabcontent" style="display: block;">
+                    <div id="plotly-chart"></div>
+        
+                    <div class="prompt-console" style="margin-top: 30px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <div class="console-header" style="background-color: #F1F5F9; padding: 10px 15px; border-bottom: 1px solid #CBD5E1;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #EF4444; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #F59E0B; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #10B981; margin-right: 8px;"></div>
+                                <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 14px;">Initial Prompt</span>
+                            </div>
+                        </div>
+                        <div class="console-body" style="background-color: #F1F5F9; padding: 15px; max-height: 350px; overflow-y: auto;">
+                            <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 14px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that meets the following specification:
+
+Create a simple Sui Move module that defines a basic token with the following features:
+- A custom token type
+- Functions to mint, burn, and transfer tokens
+- Proper access control for administrative functions
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+</pre>
+                        </div>
+                    </div>
+            
+                </div>
+        
+                <div id="Iteration1" class="tabcontent">
+                    <h3>Contract Source - Iteration 1</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 1</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that meets the following specification:
+
+Create a simple Sui Move module that defines a basic token with the following features:
+- A custom token type
+- Functions to mint, burn, and transfer tokens
+- Proper access control for administrative functions
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import necessary modules for signer operations and address manipulation.
+    use std::signer;
+    use std::address;
+
+    // Error code for unauthorized actions.
+    const ENOTAUTHORIZED: u64 = 1;
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Resource Definitions
+    /////////////////////////////////////////////////////////////////////////////
+
+    // Define a custom token resource.
+    // The &quot;MyToken&quot; resource represents a simple fungible token with an associated amount.
+    // Using &quot;store&quot; and &quot;key&quot; abilities allows the token to be stored and transferred.
+    struct MyToken has store, key {
+        amount: u64,
+    }
+
+    // Define an Admin capability resource.
+    // Possession of this resource grants the holder the authority to mint and burn tokens.
+    // The &quot;admin&quot; field records the address of the administrator.
+    struct Admin has key, store {
+        admin: address,
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Administrative Functions
+    /////////////////////////////////////////////////////////////////////////////
+
+    // Initialize an Admin capability.
+    // This function is intended to be called once by the administrator to create an Admin object,
+    // which must then be used in subsequent administrative functions (mint and burn).
+    public entry fun init_admin(admin: &amp;signer): Admin {
+        Admin { admin: signer::address_of(admin) }
+    }
+
+    // Mint new tokens.
+    // Only an authorized administrator (the one holding the correct Admin resource) can mint tokens.
+    // This function verifies that the signer matches the stored admin address.
+    // It returns both the newly minted token and the Admin capability so that the admin does not lose it.
+    public entry fun mint(admin: &amp;signer, admin_cap: Admin, amount: u64): (MyToken, Admin) {
+        // Verify that the caller is the designated administrator.
+        assert!(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+        let token = MyToken { amount };
+        (token, admin_cap)
+    }
+
+    // Burn tokens.
+    // Only an authorized administrator can burn tokens. This function consumes the token (thus &quot;burning&quot; it)
+    // and returns the amount that was burned along with the Admin capability.
+    public entry fun burn(admin: &amp;signer, admin_cap: Admin, token: MyToken): (u64, Admin) {
+        // Verify that the caller is the designated administrator.
+        assert!(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+        let amount = token.amount;
+        (amount, admin_cap)
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Token Transfer Function
+    /////////////////////////////////////////////////////////////////////////////
+
+    // Transfer tokens.
+    // The owner of the token (i.e. the signer) can transfer a token to another address.
+    // In Sui, returning an object from an entry function assigns its ownership to the receiver as indicated by the transaction.
+    // Here, &quot;to&quot; represents the intended recipient&#039;s address.
+    public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+        // In a real Sui transaction, the runtime would update the token&#039;s owner to &quot;to&quot; based on the transaction.
+        // This function serves as a placeholder to illustrate the transfer of tokens.
+        token
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration2" class="tabcontent">
+                    <h3>Contract Source - Iteration 2</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 2</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that meets the following specification:
+
+Create a simple Sui Move module that defines a basic token with the following features:
+- A custom token type
+- Functions to mint, burn, and transfer tokens
+- Proper access control for administrative functions
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+
+
+Feedback: The contract did not compile.
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:4:9
+  │
+4 │     use std::signer;
+  │         ^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;std::signer&#039;
+
+warning[W09001]: unused alias
+  ┌─ ./sources/temp_contract.move:5:14
+  │
+5 │     use std::address;
+  │              ^^^^^^^ Unused &#039;use&#039; of alias &#039;address&#039;. Consider removing it
+  │
+  = This alias does not shadow the built-in type &#039;address&#039; in type annotations.
+  = This warning can be suppressed with &#039;#[allow(unused_use)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:17:5
+   │
+17 │     struct MyToken has store, key {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02007]: invalid object declaration
+   ┌─ ./sources/temp_contract.move:18:9
+   │
+17 │     struct MyToken has store, key {
+   │                               --- The &#039;key&#039; ability is used to declare objects in Sui
+18 │         amount: u64,
+   │         ^^^^^^ Invalid object &#039;MyToken&#039;. Structs with the &#039;key&#039; ability must have &#039;id: sui::object::UID&#039; as their first field
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:24:5
+   │
+24 │     struct Admin has key, store {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02007]: invalid object declaration
+   ┌─ ./sources/temp_contract.move:25:9
+   │
+24 │     struct Admin has key, store {
+   │                      --- The &#039;key&#039; ability is used to declare objects in Sui
+25 │         admin: address,
+   │         ^^^^^ Invalid object &#039;Admin&#039;. Structs with the &#039;key&#039; ability must have &#039;id: sui::object::UID&#039; as their first field
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:35:12
+   │
+24 │     struct Admin has key, store {
+   │            ----- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+   ·
+35 │     public entry fun init_admin(admin: &amp;signer): Admin {
+   │            ^^^^^                                 ----- The type &#039;temp_addr::my_module::Admin&#039; does not have the ability &#039;drop&#039;
+   │            │                                      
+   │            Invalid return type for entry function &#039;init_admin&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:35:33
+   │
+35 │     public entry fun init_admin(admin: &amp;signer): Admin {
+   │                                 ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:36:24
+   │
+36 │         Admin { admin: signer::address_of(admin) }
+   │                        ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:43:12
+   │
+43 │     public entry fun mint(admin: &amp;signer, admin_cap: Admin, amount: u64): (MyToken, Admin) {
+   │            ^^^^^                                                          ----------------
+   │            │                                                              ││
+   │            │                                                              │The type &#039;(temp_addr::my_module::MyToken, temp_addr::my_module::Admin)&#039; can have the ability &#039;drop&#039; but the type argument &#039;temp_addr::my_module::MyToken&#039; does not have the required ability &#039;drop&#039;
+   │            │                                                              The type &#039;(temp_addr::my_module::MyToken, temp_addr::my_module::Admin)&#039; does not have the ability &#039;drop&#039;
+   │            Invalid return type for entry function &#039;mint&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:43:27
+   │
+43 │     public entry fun mint(admin: &amp;signer, admin_cap: Admin, amount: u64): (MyToken, Admin) {
+   │                           ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:45:17
+   │
+45 │         assert!(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+   │                 ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:53:12
+   │
+53 │     public entry fun burn(admin: &amp;signer, admin_cap: Admin, token: MyToken): (u64, Admin) {
+   │            ^^^^^                                                             ------------
+   │            │                                                                 │     │
+   │            │                                                                 │     The type &#039;(u64, temp_addr::my_module::Admin)&#039; can have the ability &#039;drop&#039; but the type argument &#039;temp_addr::my_module::Admin&#039; does not have the required ability &#039;drop&#039;
+   │            │                                                                 The type &#039;(u64, temp_addr::my_module::Admin)&#039; does not have the ability &#039;drop&#039;
+   │            Invalid return type for entry function &#039;burn&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:53:27
+   │
+53 │     public entry fun burn(admin: &amp;signer, admin_cap: Admin, token: MyToken): (u64, Admin) {
+   │                           ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:55:17
+   │
+55 │         assert!(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+   │                 ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:68:12
+   │
+17 │     struct MyToken has store, key {
+   │            ------- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+   ·
+68 │     public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+   │            ^^^^^                                                             ------- The type &#039;temp_addr::my_module::MyToken&#039; does not have the ability &#039;drop&#039;
+   │            │                                                                  
+   │            Invalid return type for entry function &#039;transfer&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:68:31
+   │
+68 │     public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+   │                               ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:68:64
+   │
+68 │     public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+   │                                                                ^^ Unused parameter &#039;to&#039;. Consider removing or prefixing with an underscore: &#039;_to&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+
+Please revise the contract accordingly, ensuring that all issues are resolved.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import UID for object identity and TxContext for creating new IDs.
+    use sui::object::UID;
+    use sui::tx_context::TxContext;
+    // Import the signer library from MoveStdlib to get the address of a signer.
+    use move_stdlib::signer;
+
+    // Error code for unauthorized actions.
+    const ENOTAUTHORIZED: u64 = 1000;
+
+    // The MyToken resource represents a basic token.
+    // To be a valid Sui object, the first field must be a UID.
+    // The &#039;drop&#039; ability is required for tokens to be passed by value in entry functions.
+    public struct MyToken has key, store, drop {
+        id: UID,
+        amount: u64,
+    }
+
+    // The Admin resource is our administrative capability.
+    // It must also be a valid Sui object so we include a UID as the first field.
+    public struct Admin has key, store, drop {
+        id: UID,
+        admin: address,
+    }
+
+    // Initialize the Admin object.
+    // This entry function creates an Admin resource using the signer&#039;s address.
+    // It also requires a mutable TxContext to generate a new UID.
+    public entry fun init_admin(admin: &amp;signer, ctx: &amp;mut TxContext): Admin {
+        Admin {
+            id: UID::new(ctx),
+            admin: signer::address_of(admin)
+        }
+    }
+
+    // Mint new tokens.
+    // This entry function mints a new token with the specified amount.
+    // The function checks that the caller (via the signer) matches the admin address.
+    // A mutable TxContext is required to generate a UID for the newly minted token.
+    public entry fun mint(admin: &amp;signer, admin_cap: Admin, amount: u64, ctx: &amp;mut TxContext): (MyToken, Admin) {
+        // Confirm that the caller is authorized to mint tokens.
+        assert(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+        let token = MyToken {
+            id: UID::new(ctx),
+            amount: amount,
+        };
+        (token, admin_cap)
+    }
+
+    // Burn tokens.
+    // This entry function burns the specified token and returns its burned amount.
+    // Authorization is required to perform the burn action.
+    public entry fun burn(admin: &amp;signer, admin_cap: Admin, token: MyToken): (u64, Admin) {
+        // Confirm that the caller is authorized to burn tokens.
+        assert(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+        let burned = token.amount;
+        (burned, admin_cap)
+    }
+
+    // Transfer tokens.
+    // This entry function transfers tokens from the sender to a target address.
+    // For simplicity, this example does not implement an actual balance update.
+    public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+        // In a complete implementation, you would verify that &#039;sender&#039; is authorized
+        // to transfer the token and update balances accordingly.
+        // Here, we simply return the token unchanged.
+        token
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration3" class="tabcontent">
+                    <h3>Contract Source - Iteration 3</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 3</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that meets the following specification:
+
+Create a simple Sui Move module that defines a basic token with the following features:
+- A custom token type
+- Functions to mint, burn, and transfer tokens
+- Proper access control for administrative functions
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+
+
+Feedback: The contract did not compile.
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:4:22
+  │
+4 │     use sui::object::UID;
+  │                      ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:26
+  │
+5 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03001]: address with no value
+  ┌─ ./sources/temp_contract.move:7:9
+  │
+7 │     use move_stdlib::signer;
+  │         ^^^^^^^^^^^ address &#039;move_stdlib&#039; is not assigned a value
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:7:9
+  │
+7 │     use move_stdlib::signer;
+  │         ^^^^^^^^^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;move_stdlib::signer&#039;
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:16:13
+   │
+16 │         id: UID,
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:23:13
+   │
+23 │         id: UID,
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:30:33
+   │
+30 │     public entry fun init_admin(admin: &amp;signer, ctx: &amp;mut TxContext): Admin {
+   │                                 ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:32:17
+   │
+32 │             id: UID::new(ctx),
+   │                 ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:33:20
+   │
+33 │             admin: signer::address_of(admin)
+   │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:41:27
+   │
+41 │     public entry fun mint(admin: &amp;signer, admin_cap: Admin, amount: u64, ctx: &amp;mut TxContext): (MyToken, Admin) {
+   │                           ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ ./sources/temp_contract.move:43:9
+   │
+43 │         assert(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ &#039;assert&#039; function syntax has been deprecated and will be removed
+   │
+   = Replace with &#039;assert!&#039;. &#039;assert&#039; has been replaced with a &#039;assert!&#039; built-in macro so that arguments are no longer eagerly evaluated
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:43:16
+   │
+43 │         assert(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+   │                ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:45:17
+   │
+45 │             id: UID::new(ctx),
+   │                 ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:54:27
+   │
+54 │     public entry fun burn(admin: &amp;signer, admin_cap: Admin, token: MyToken): (u64, Admin) {
+   │                           ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ ./sources/temp_contract.move:56:9
+   │
+56 │         assert(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ &#039;assert&#039; function syntax has been deprecated and will be removed
+   │
+   = Replace with &#039;assert!&#039;. &#039;assert&#039; has been replaced with a &#039;assert!&#039; built-in macro so that arguments are no longer eagerly evaluated
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:56:16
+   │
+56 │         assert(signer::address_of(admin) == admin_cap.admin, ENOTAUTHORIZED);
+   │                ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:64:31
+   │
+64 │     public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+   │                               ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:64:64
+   │
+64 │     public entry fun transfer(sender: &amp;signer, token: MyToken, to: address): MyToken {
+   │                                                                ^^ Unused parameter &#039;to&#039;. Consider removing or prefixing with an underscore: &#039;_to&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+
+[bold]Delta Changes:[/bold] Errors: [red]+0[/red] | Compiler Warnings: [yellow]+3[/yellow] | Linter Warnings: [blue]+0[/blue]
+Please revise the contract accordingly, ensuring that all issues are resolved.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">// This Sui Move module defines a basic token with mint, burn, and transfer functionality.
+// The module uses proper admin access control and leverages Sui primitives like UID and TxContext.
+// The module is defined at the address &#039;temp_addr&#039; and its name is &#039;my_module&#039;.
+
+module temp_addr::my_module {
+
+    // Import Sui framework modules.
+    use sui::object::{UID, new_uid};
+    use sui::tx_context::TxContext;
+
+    // Error code for unauthorized access.
+    const ENOTAUTHORIZED: u64 = 0;
+
+    // Resource that holds the administrator&#039;s address.
+    resource struct Admin has key, store {
+        admin: address,
+    }
+
+    // Custom Token resource. We assign it the abilities &quot;key&quot; and &quot;store&quot; (i.e. not &quot;drop&quot;)
+    // so that the UID field which does not have the &quot;drop&quot; ability can be included.
+    resource struct MyToken has key, store {
+        id: UID,    // Unique identifier for the token.
+        value: u64, // Amount/value represented by the token.
+        owner: address, // Owner&#039;s address.
+    }
+
+    // Initialize the admin. The TxContext provides the transaction sender&#039;s address.
+    // The resulting Admin capability is used to restrict minting and burning actions.
+    public entry fun init_admin(ctx: &amp;mut TxContext): Admin {
+        let admin_addr = TxContext::sender(ctx);
+        Admin { admin: admin_addr }
+    }
+
+    // Mint new tokens. Only an authorized admin (as recorded in admin_cap) can mint tokens.
+    // Returns a tuple containing the newly minted token and the admin capability.
+    public entry fun mint(admin_cap: Admin, amount: u64, ctx: &amp;mut TxContext): (MyToken, Admin) {
+        let caller = TxContext::sender(ctx);
+        // Ensure that the caller is the admin.
+        assert(caller == admin_cap.admin, ENOTAUTHORIZED);
+        // Create a new token with a unique ID and assign ownership to the caller.
+        let token = MyToken {
+            id: new_uid(ctx),
+            value: amount,
+            owner: caller,
+        };
+        (token, admin_cap)
+    }
+
+    // Burn tokens. Only an authorized admin can burn tokens.
+    // Burning a token destroys it and returns the token&#039;s value along with the admin capability.
+    public entry fun burn(admin_cap: Admin, token: MyToken, ctx: &amp;mut TxContext): (u64, Admin) {
+        let caller = TxContext::sender(ctx);
+        // Ensure that the caller is the admin.
+        assert(caller == admin_cap.admin, ENOTAUTHORIZED);
+        let value = token.value;
+        // The token is consumed (destroyed) as it goes out of scope.
+        (value, admin_cap)
+    }
+
+    // Transfer token ownership. Only the current token owner is allowed to transfer their token.
+    // Returns the token with its owner field updated to the new address.
+    public entry fun transfer(token: MyToken, to: address, ctx: &amp;mut TxContext): MyToken {
+        let caller = TxContext::sender(ctx);
+        // Ensure that the caller is the token&#039;s owner.
+        assert(caller == token.owner, ENOTAUTHORIZED);
+        // Create a new token with the same ID and value but update the owner.
+        MyToken {
+            id: token.id,
+            value: token.value,
+            owner: to,
+        }
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration4" class="tabcontent">
+                    <h3>Contract Source - Iteration 4</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 4</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that meets the following specification:
+
+Create a simple Sui Move module that defines a basic token with the following features:
+- A custom token type
+- Functions to mint, burn, and transfer tokens
+- Proper access control for administrative functions
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+
+
+Feedback: The contract did not compile.
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:8:23
+  │
+8 │     use sui::object::{UID, new_uid};
+  │                       ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03003]: unbound module member
+  ┌─ ./sources/temp_contract.move:8:28
+  │
+8 │     use sui::object::{UID, new_uid};
+  │                            ^^^^^^^ Invalid &#039;use&#039;. Unbound member &#039;new_uid&#039; in module &#039;sui::object&#039;
+  │
+  ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13
+  │
+5 │ module sui::object;
+  │             ------ Module &#039;sui::object&#039; declared here
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:9:26
+  │
+9 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E01002]: unexpected token
+   ┌─ ./sources/temp_contract.move:15:5
+   │
+15 │     resource struct Admin has key, store {
+   │     ^^^^^^^^
+   │     │
+   │     Unexpected &#039;resource&#039;
+   │     Expected a module member: &#039;spec&#039;, &#039;use&#039;, &#039;friend&#039;, &#039;const&#039;, &#039;fun&#039;, &#039;struct&#039;, or &#039;enum&#039;
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:15:14
+   │
+15 │     resource struct Admin has key, store {
+   │              ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02007]: invalid object declaration
+   ┌─ ./sources/temp_contract.move:16:9
+   │
+15 │     resource struct Admin has key, store {
+   │                               --- The &#039;key&#039; ability is used to declare objects in Sui
+16 │         admin: address,
+   │         ^^^^^ Invalid object &#039;Admin&#039;. Structs with the &#039;key&#039; ability must have &#039;id: sui::object::UID&#039; as their first field
+
+error[E01002]: unexpected token
+   ┌─ ./sources/temp_contract.move:21:5
+   │
+21 │     resource struct MyToken has key, store {
+   │     ^^^^^^^^
+   │     │
+   │     Unexpected &#039;resource&#039;
+   │     Expected a module member: &#039;spec&#039;, &#039;use&#039;, &#039;friend&#039;, &#039;const&#039;, &#039;fun&#039;, &#039;struct&#039;, or &#039;enum&#039;
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:21:14
+   │
+21 │     resource struct MyToken has key, store {
+   │              ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:29:12
+   │
+15 │     resource struct Admin has key, store {
+   │                     ----- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+   ·
+29 │     public entry fun init_admin(ctx: &amp;mut TxContext): Admin {
+   │            ^^^^^                                      ----- The type &#039;temp_addr::my_module::Admin&#039; does not have the ability &#039;drop&#039;
+   │            │                                           
+   │            Invalid return type for entry function &#039;init_admin&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:30:26
+   │
+30 │         let admin_addr = TxContext::sender(ctx);
+   │                          ^^^^^^^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+   │
+21 │ public struct TxContext has drop {
+   │               --------- But &#039;TxContext&#039; is an struct
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:36:12
+   │
+36 │     public entry fun mint(admin_cap: Admin, amount: u64, ctx: &amp;mut TxContext): (MyToken, Admin) {
+   │            ^^^^^                                                               ----------------
+   │            │                                                                   ││
+   │            │                                                                   │The type &#039;(temp_addr::my_module::MyToken, temp_addr::my_module::Admin)&#039; can have the ability &#039;drop&#039; but the type argument &#039;temp_addr::my_module::MyToken&#039; does not have the required ability &#039;drop&#039;
+   │            │                                                                   The type &#039;(temp_addr::my_module::MyToken, temp_addr::my_module::Admin)&#039; does not have the ability &#039;drop&#039;
+   │            Invalid return type for entry function &#039;mint&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:37:22
+   │
+37 │         let caller = TxContext::sender(ctx);
+   │                      ^^^^^^^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+   │
+21 │ public struct TxContext has drop {
+   │               --------- But &#039;TxContext&#039; is an struct
+
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ ./sources/temp_contract.move:39:9
+   │
+39 │         assert(caller == admin_cap.admin, ENOTAUTHORIZED);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ &#039;assert&#039; function syntax has been deprecated and will be removed
+   │
+   = Replace with &#039;assert!&#039;. &#039;assert&#039; has been replaced with a &#039;assert!&#039; built-in macro so that arguments are no longer eagerly evaluated
+
+error[E03005]: unbound unscoped name
+   ┌─ ./sources/temp_contract.move:42:17
+   │
+42 │             id: new_uid(ctx),
+   │                 ^^^^^^^ Unbound function &#039;new_uid&#039; in current scope
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:51:12
+   │
+51 │     public entry fun burn(admin_cap: Admin, token: MyToken, ctx: &amp;mut TxContext): (u64, Admin) {
+   │            ^^^^^                                                                  ------------
+   │            │                                                                      │     │
+   │            │                                                                      │     The type &#039;(u64, temp_addr::my_module::Admin)&#039; can have the ability &#039;drop&#039; but the type argument &#039;temp_addr::my_module::Admin&#039; does not have the required ability &#039;drop&#039;
+   │            │                                                                      The type &#039;(u64, temp_addr::my_module::Admin)&#039; does not have the ability &#039;drop&#039;
+   │            Invalid return type for entry function &#039;burn&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:52:22
+   │
+52 │         let caller = TxContext::sender(ctx);
+   │                      ^^^^^^^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+   │
+21 │ public struct TxContext has drop {
+   │               --------- But &#039;TxContext&#039; is an struct
+
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ ./sources/temp_contract.move:54:9
+   │
+54 │         assert(caller == admin_cap.admin, ENOTAUTHORIZED);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ &#039;assert&#039; function syntax has been deprecated and will be removed
+   │
+   = Replace with &#039;assert!&#039;. &#039;assert&#039; has been replaced with a &#039;assert!&#039; built-in macro so that arguments are no longer eagerly evaluated
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:62:12
+   │
+21 │     resource struct MyToken has key, store {
+   │                     ------- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+   ·
+62 │     public entry fun transfer(token: MyToken, to: address, ctx: &amp;mut TxContext): MyToken {
+   │            ^^^^^                                                                 ------- The type &#039;temp_addr::my_module::MyToken&#039; does not have the ability &#039;drop&#039;
+   │            │                                                                      
+   │            Invalid return type for entry function &#039;transfer&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:63:22
+   │
+63 │         let caller = TxContext::sender(ctx);
+   │                      ^^^^^^^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+   │
+21 │ public struct TxContext has drop {
+   │               --------- But &#039;TxContext&#039; is an struct
+
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ ./sources/temp_contract.move:65:9
+   │
+65 │         assert(caller == token.owner, ENOTAUTHORIZED);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ &#039;assert&#039; function syntax has been deprecated and will be removed
+   │
+   = Replace with &#039;assert!&#039;. &#039;assert&#039; has been replaced with a &#039;assert!&#039; built-in macro so that arguments are no longer eagerly evaluated
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:68:17
+   │
+22 │         id: UID,    // Unique identifier for the token.
+   │             --- The type &#039;sui::object::UID&#039; does not have the ability &#039;copy&#039;
+   ·
+68 │             id: token.id,
+   │                 ^^^^^^^^ Invalid implicit copy of field &#039;id&#039; without the &#039;copy&#039; ability
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;copy&#039; ability would need to be added here
+
+
+[bold]Delta Changes:[/bold] Errors: [red]+3[/red] | Compiler Warnings: [yellow]-4[/yellow] | Linter Warnings: [blue]+0[/blue]
+Please revise the contract accordingly, ensuring that all issues are resolved.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import necessary types from Sui framework.
+    use sui::object::UID;
+    use sui::tx_context::TxContext;
+
+    // Error code for unauthorized access.
+    const ENOTAUTHORIZED: u64 = 1;
+
+    // The Admin object holds the administrator address.
+    // In Sui, objects must have an id field of type UID as the first field.
+    public struct Admin has key, store, drop {
+        id: UID,
+        admin: address,
+    }
+
+    // The MyToken object represents a simple token.
+    // It tracks the owner and the token balance.
+    public struct MyToken has key, store, drop {
+        id: UID,
+        owner: address,
+        balance: u64,
+    }
+
+    // Initialize the administrator.
+    // The function creates an Admin object with the caller as the admin.
+    public entry fun init_admin(ctx: &amp;mut TxContext): Admin {
+        let sender = ctx.sender;
+        // Create a new unique identifier for the Admin object.
+        Admin {
+            id: UID::new(ctx),
+            admin: sender,
+        }
+    }
+
+    // Mint new tokens.
+    // Only the admin (as specified in the admin_cap) is authorized to mint tokens.
+    // Returns the newly minted MyToken along with the admin_cap (to preserve admin access).
+    public entry fun mint(admin_cap: Admin, amount: u64, ctx: &amp;mut TxContext): (MyToken, Admin) {
+        let caller = ctx.sender;
+        // Ensure the caller is the admin.
+        assert!(caller == admin_cap.admin, ENOTAUTHORIZED);
+        // Create a new token with the specified amount.
+        let token = MyToken {
+            id: UID::new(ctx),
+            owner: caller,
+            balance: amount,
+        };
+        (token, admin_cap)
+    }
+
+    // Burn tokens.
+    // Only the admin (as specified in the admin_cap) is authorized to burn tokens.
+    // The token is destroyed and its balance is returned.
+    public entry fun burn(admin_cap: Admin, token: MyToken, ctx: &amp;mut TxContext): (u64, Admin) {
+        let caller = ctx.sender;
+        // Ensure the caller is the admin.
+        assert!(caller == admin_cap.admin, ENOTAUTHORIZED);
+        let amount = token.balance;
+        // The token is implicitly destroyed when it goes out of scope.
+        (amount, admin_cap)
+    }
+
+    // Transfer tokens to a new owner.
+    // Only the current owner of the token can initiate a transfer.
+    // Returns a new token with the updated owner.
+    public entry fun transfer(token: MyToken, to: address, ctx: &amp;mut TxContext): MyToken {
+        let caller = ctx.sender;
+        // Destructure the token resource to extract its fields.
+        let MyToken {
+            id,
+            owner: curr_owner,
+            balance,
+        } = token;
+        // Ensure the caller is the current owner.
+        assert!(caller == curr_owner, ENOTAUTHORIZED);
+        // Create a new token with the same id and balance but with updated owner.
+        MyToken {
+            id,
+            owner: to,
+            balance,
+        }
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration5" class="tabcontent">
+                    <h3>Contract Source - Iteration 5</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 5</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that meets the following specification:
+
+Create a simple Sui Move module that defines a basic token with the following features:
+- A custom token type
+- Functions to mint, burn, and transfer tokens
+- Proper access control for administrative functions
+
+Include helpful comments in your code to explain key concepts and design decisions.
+
+
+
+Feedback: The contract did not compile.
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:4:22
+  │
+4 │     use sui::object::UID;
+  │                      ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:26
+  │
+5 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:13:13
+   │
+13 │         id: UID,
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:20:13
+   │
+20 │         id: UID,
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E04001]: restricted visibility
+   ┌─ ./sources/temp_contract.move:28:22
+   │
+28 │         let sender = ctx.sender;
+   │                      ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:31:17
+   │
+31 │             id: UID::new(ctx),
+   │                 ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+error[E04001]: restricted visibility
+   ┌─ ./sources/temp_contract.move:40:22
+   │
+40 │         let caller = ctx.sender;
+   │                      ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:45:17
+   │
+45 │             id: UID::new(ctx),
+   │                 ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+error[E04001]: restricted visibility
+   ┌─ ./sources/temp_contract.move:56:22
+   │
+56 │         let caller = ctx.sender;
+   │                      ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[E04001]: restricted visibility
+   ┌─ ./sources/temp_contract.move:68:22
+   │
+68 │         let caller = ctx.sender;
+   │                      ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+
+[bold]Delta Changes:[/bold] Errors: [red]-11[/red] | Compiler Warnings: [yellow]-3[/yellow] | Linter Warnings: [blue]+0[/blue]
+Please revise the contract accordingly, ensuring that all issues are resolved.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Allow duplicate alias warnings from the Sui framework
+    #[allow(duplicate_alias)]
+    
+    // Import necessary modules from Sui and standard library.
+    use sui::object;
+    use sui::tx_context;
+    use std::signer;
+
+    // AdminCap is a capability resource that grants admin privileges.
+    // Only the holder of this resource is allowed to perform administrative operations like minting or burning tokens.
+    resource struct AdminCap has key {
+        // No fields needed; this is a marker resource.
+    }
+
+    // Token is a basic token object.
+    // It stores a unique identifier, the owner&#039;s address, and the token balance.
+    // The abilities &quot;key&quot; and &quot;store&quot; are explicitly declared to avoid requiring the &#039;drop&#039; ability for fields.
+    resource struct Token has key, store {
+        id: object::UID,
+        owner: address,
+        balance: u64,
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Administrative functions
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Initialize the admin capability.
+    // The caller (a signer) becomes the admin by receiving an AdminCap resource.
+    public fun init_admin(admin: &amp;signer, ctx: &amp;mut tx_context::TxContext): AdminCap {
+        // For simplicity, any caller can call this function to obtain an AdminCap.
+        // In production, initialization should be restricted or performed only once.
+        AdminCap {}
+    }
+
+    // Mint creates a new Token resource with the specified amount for the given recipient.
+    // Only an admin (holder of AdminCap) can mint tokens.
+    // The AdminCap is taken in and then returned to ensure continuous admin control.
+    public fun mint(recipient: address, amount: u64, admin_cap: AdminCap, ctx: &amp;mut tx_context::TxContext): (Token, AdminCap) {
+        // Create a new token using a unique identifier generated by the Sui framework.
+        let new_token = Token {
+            id: object::new_uid(ctx),
+            owner: recipient,
+            balance: amount,
+        };
+        (new_token, admin_cap)
+    }
+
+    // Burn destroys a Token resource.
+    // Only an admin (holder of AdminCap) can burn tokens.
+    // The burned token is simply consumed, and the AdminCap is returned.
+    public fun burn(token: Token, admin_cap: AdminCap, ctx: &amp;mut tx_context::TxContext): AdminCap {
+        // The token is consumed (dropped) when this function ends.
+        admin_cap
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // User functions
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Transfer allows the owner of a token to transfer it to another address.
+    // The sender must provide their signature, and ownership is verified against the token&#039;s owner.
+    public fun transfer(token: Token, recipient: address, sender: &amp;signer, ctx: &amp;mut tx_context::TxContext): Token {
+        // Retrieve the sender&#039;s address using the standard Signer module.
+        let sender_addr = signer::address_of(sender);
+        // Ensure that the sender is the owner of the token.
+        assert!(sender_addr == token.owner, 0);
+        
+        // Since the token is passed by value, it is mutable within this function.
+        let mut t = token;
+        t.owner = recipient;
+        t
+    }
+}</code></pre>
+                </div>
+                
+                <script>
+                    // Legacy function for backward compatibility
+                    function openTab(evt, tabName) {
+                        var i, tabcontent, tablinks;
+                        tabcontent = document.getElementsByClassName("tabcontent");
+                        for (i = 0; i < tabcontent.length; i++) {
+                            tabcontent[i].style.display = "none";
+                        }
+                        tablinks = document.getElementsByClassName("tablinks");
+                        for (i = 0; i < tablinks.length; i++) {
+                            tablinks[i].className = tablinks[i].className.replace(" active", "");
+                        }
+                        document.getElementById(tabName).style.display = "block";
+                        evt.currentTarget.className += " active";
+                    }
+
+                    // Tab handling functions
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // First, hide all tab contents
+                        var tabcontents = document.getElementsByClassName("tabcontent");
+                        for (var i = 0; i < tabcontents.length; i++) {
+                            tabcontents[i].style.display = "none";
+                        }
+                        
+                        // Show the default tab
+                        document.getElementById("ErrorChart").style.display = "block";
+                        
+                        // Setup click handlers for tabs
+                        var tabs = document.getElementById("tabs").getElementsByTagName("button");
+                        for (var i = 0; i < tabs.length; i++) {
+                            tabs[i].addEventListener("click", function() {
+                                // Remove active class from all tabs
+                                for (var j = 0; j < tabs.length; j++) {
+                                    tabs[j].className = tabs[j].className.replace(" active", "");
+                                }
+                                
+                                // Add active class to clicked tab
+                                this.className += " active";
+                                
+                                // Hide all tab contents
+                                for (var j = 0; j < tabcontents.length; j++) {
+                                    tabcontents[j].style.display = "none";
+                                }
+                                
+                                // Show the corresponding tab content
+                                var tabId = this.id.replace("Tab", "");
+                                document.getElementById(tabId).style.display = "block";
+                            });
+                        }
+                    });
+                    
+                    // Add line numbers to code blocks
+                    function addLineNumbers() {
+                        var codeBlocks = document.querySelectorAll('pre code');
+                        codeBlocks.forEach(function(codeBlock) {
+                            var lines = codeBlock.innerHTML.split('\n');
+                            var numbered = lines.map(function(line, i) {
+                                return '<span class="hljs-line-numbers">' + (i + 1) + '</span>' + line;
+                            }).join('\n');
+                            codeBlock.innerHTML = numbered;
+                        });
+                    }
+                    
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize syntax highlighting
+                        hljs.highlightAll();
+                        // Add line numbers after highlighting
+                        addLineNumbers();
+                        
+                        // Process code blocks in prompts
+                        processPromptCodeBlocks();
+                    });
+                    
+                    // Function to process code blocks in prompts
+                    function processPromptCodeBlocks() {
+                        // Find all prompt pre elements
+                        const promptPres = document.querySelectorAll('.console-body pre');
+                        
+                        promptPres.forEach(function(pre) {
+                            try {
+                                // Use a safer string-based approach instead of regex
+                                let content = pre.innerHTML;
+                                let processed = content;
+                                
+                                // Find the start positions of all code blocks
+                                const codeBlockStarts = [];
+                                let searchPos = 0;
+                                let foundPos;
+                                
+                                while ((foundPos = content.indexOf("```", searchPos)) !== -1) {
+                                    codeBlockStarts.push(foundPos);
+                                    searchPos = foundPos + 3;
+                                }
+                                
+                                // Process code blocks in reverse order to avoid position shifts
+                                if (codeBlockStarts.length >= 2 && codeBlockStarts.length % 2 === 0) {
+                                    for (let i = codeBlockStarts.length - 2; i >= 0; i -= 2) {
+                                        const blockStart = codeBlockStarts[i];
+                                        const blockEnd = codeBlockStarts[i + 1];
+                                        
+                                        // Extract the entire block including markers
+                                        const fullBlock = content.substring(blockStart, blockEnd + 3);
+                                        
+                                        // Extract language (if any)
+                                        let lang = 'plaintext';
+                                        const firstLineEnd = fullBlock.indexOf('');
+                                        if (firstLineEnd > 3) { // There's content after the opening ```
+                                            lang = fullBlock.substring(3, firstLineEnd).trim() || 'plaintext';
+                                        }
+                                        
+                                        // Extract code content (between the markers)
+                                        const codeStart = fullBlock.indexOf('') + 1;
+                                        const codeEnd = fullBlock.lastIndexOf("```");
+                                        const code = fullBlock.substring(codeStart, codeEnd);
+                                        
+                                        // Create the replacement HTML
+                                        const replacement = `<div class="prompt-code-block" style="margin: 10px 0; border-radius: 4px; overflow: hidden;">
+                                          <div style="padding: 6px 10px; background-color: rgba(0,0,0,0.2); font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">${lang}</div>
+                                          <pre style="margin: 0; padding: 10px;"><code class="language-${lang}">${code}</code></pre>
+                                        </div>`;
+                                        
+                                        // Replace the code block with the HTML
+                                        processed = processed.replace(fullBlock, replacement);
+                                    }
+                                }
+                                
+                                if (content !== processed) {
+                                    pre.innerHTML = processed;
+                                    // Apply highlighting to the newly created code blocks
+                                    pre.querySelectorAll('code').forEach(function(block) {
+                                        hljs.highlightElement(block);
+                                    });
+                                }
+                            } catch (error) {
+                                console.log("Error processing code blocks:", error);
+                            }
+                        });
+                    }
+                </script>
+        
+                <script>
+                    var figure = {"data":[{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(25.0, 90.0%, 50.0%)"},"name":"Error: unbound module","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.9%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,1,0,0,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(28.333333333333332, 88.33333333333333%, 51.666666666666664%)"},"name":"Error: unbound module member","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.9%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,1,0,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(31.666666666666664, 86.66666666666667%, 53.333333333333336%)"},"name":"Error: unbound unscoped name","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound unscoped name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,1,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(35.0, 85.0%, 55.0%)"},"name":"Error: unexpected name in this position","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e16.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e27.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e19.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.9%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[3,5,4,2,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(0.0, 90.0%, 50.0%)"},"name":"Non-blocking Error: address with no value","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eaddress with no value\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,1,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(1.4285714285714284, 89.28571428571429%, 50.714285714285715%)"},"name":"Non-blocking Error: restricted visibility","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003erestricted visibility\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e40.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,0,4,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(2.8571428571428568, 88.57142857142857%, 51.42857142857143%)"},"name":"Non-blocking Error: ability constraint not satisfied","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.1%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,2,1,2,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(4.285714285714286, 87.85714285714286%, 52.142857142857146%)"},"name":"Non-blocking Error: unexpected token","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected token\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.5%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected token\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.8%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,2,0,2],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(5.7142857142857135, 87.14285714285714%, 52.857142857142854%)"},"name":"Non-blocking Error: invalid 'entry' function signature","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e22.2%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e19.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[4,0,4,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(7.142857142857143, 86.42857142857143%, 53.57142857142857%)"},"name":"Non-blocking Error: invalid modifier","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.1%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.5%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.8%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,0,2,0,2],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(8.571428571428571, 85.71428571428571%, 54.285714285714285%)"},"name":"Non-blocking Error: invalid object declaration","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid object declaration\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.1%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid object declaration\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid object declaration\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.9%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,0,1,0,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(10.0, 85.0%, 55.0%)"},"name":"Non-blocking Error: invalid attribute","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid attribute\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.9%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,0,0,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(40.0, 75.0%, 45.0%)"},"name":"Warning: DEPRECATED. will be removed","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01000\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01000\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eDEPRECATED. will be removed\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.1%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01000\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eDEPRECATED. will be removed\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e14.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01000\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01000\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,2,3,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(43.333333333333336, 73.33333333333333%, 46.666666666666664%)"},"name":"Warning: unused alias","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW01009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(46.666666666666664, 71.66666666666667%, 48.333333333333336%)"},"name":"Warning: unused variable","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e27.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e27.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e6\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e35.3%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[5,5,0,0,6],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(50.0, 70.0%, 50.0%)"},"name":"Warning: duplicate alias","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.1%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e9.5%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e11.8%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,2,2,2,2],"type":"bar"},{"hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e\u003cbr\u003eTotal Errors: \u003cb\u003e%{y}\u003c\u002fb\u003e\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"red","dash":"solid","width":3},"marker":{"color":"darkred","size":10,"symbol":"diamond"},"mode":"lines+markers","name":"Total Errors","x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[18,18,21,10,17],"type":"scatter"}],"layout":{"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"annotations":[{"bgcolor":"rgba(245, 247, 250, 0.85)","bordercolor":"rgba(200, 200, 200, 0.5)","borderpad":10,"borderwidth":2,"font":{"color":"rgba(0, 0, 0, 0.2)","family":"Arial, sans-serif","size":14},"opacity":0.9,"showarrow":false,"text":"Sui Move Compiler Error Analysis","x":0.5,"xanchor":"right","xref":"paper","y":1.05,"yanchor":"top","yref":"paper"},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"0.0%","x":1,"y":18.0},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"16.7%","x":2,"y":19.5},{"arrowcolor":"#22C55E","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#22C55E","size":12},"showarrow":true,"text":"-52.4%","x":3,"y":15.5},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"70.0%","x":4,"y":13.5},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"18","x":0,"y":19},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"18","x":1,"y":19},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"21","x":2,"y":22},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"10","x":3,"y":11},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"17","x":4,"y":18}],"title":{"font":{"size":24,"family":"Arial, sans-serif","color":"#1E3A8A"},"text":"Evolution of Compiler Errors Across Iterations","y":0.95,"x":0.5,"xanchor":"center","yanchor":"top"},"xaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#333"},"text":"Iteration"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(0, 0, 0, 0.1)","tickangle":0},"yaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#333"},"text":"Number of Errors"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(0, 0, 0, 0.1)"},"legend":{"title":{"font":{"size":14,"family":"Arial, sans-serif","color":"#333"},"text":"Error Types"},"bgcolor":"rgba(255, 255, 255, 0.5)","bordercolor":"rgba(0, 0, 0, 0.1)","borderwidth":1,"orientation":"v","yanchor":"middle","y":0.5,"xanchor":"left","x":1.02},"margin":{"t":100,"b":100,"l":100,"r":100},"font":{"family":"Arial, sans-serif","color":"#333"},"barmode":"stack","hovermode":"closest","height":800,"paper_bgcolor":"white","plot_bgcolor":"white"}};
+                    Plotly.newPlot('plotly-chart', figure.data, figure.layout, {
+                        displayModeBar: true,
+                        responsive: true,
+                        displaylogo: false,
+                        toImageButtonOptions: {
+                            format: 'png',
+                            filename: 'error_chart',
+                            height: 800,
+                            width: 1200,
+                            scale: 2
+                        }
+                    });
+                </script>
+            </div>
+        </body>
+        </html>
+        

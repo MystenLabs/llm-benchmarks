@@ -1,0 +1,2077 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sui Move Contract Analysis</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/rust.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/toml.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/markdown.min.js"></script>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #111827;
+                    color: #22C55E;
+                }
+                .container {
+                    width: 95%;
+                    margin: 20px auto;
+                    min-height: 85vh; /* Ensure container takes up most of the viewport height */
+                }
+                .tab {
+                    overflow: hidden;
+                    border: 1px solid #2D3748;
+                    background-color: #1F2937;
+                    border-radius: 5px 5px 0 0;
+                }
+                .tab button {
+                    background-color: inherit;
+                    float: left;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 14px 16px;
+                    transition: 0.3s;
+                    font-size: 16px;
+                    color: #22C55E;
+                }
+                .tab button:hover {
+                    background-color: #374151;
+                }
+                .tab button.active {
+                    background-color: #4B5563;
+                }
+                .tabcontent {
+                    display: none;
+                    padding: 6px 12px;
+                    border: 1px solid #2D3748;
+                    border-top: none;
+                    border-radius: 0 0 5px 5px;
+                    animation: fadeEffect 1s;
+                    background-color: #1F2937;
+                    min-height: 70vh; /* Ensure tab content area is tall enough */
+                }
+                @keyframes fadeEffect {
+                    from {opacity: 0;}
+                    to {opacity: 1;}
+                }
+                pre {
+                    margin: 0;
+                    padding: 16px;
+                    overflow: auto;
+                    border-radius: 4px;
+                }
+                code {
+                    font-family: 'Courier New', Courier, monospace;
+                }
+                .hljs-line-numbers {
+                    text-align: right;
+                    padding-right: 10px;
+                    color: #6B7280;
+                    border-right: 1px solid #4B5563;
+                    margin-right: 10px;
+                    user-select: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 style="text-align: center; color: #3B82F6;">Sui Move Contract Analysis</h1>
+                
+                <div class="tab" id="tabs">
+                    <button class="tablinks active" id="ErrorChartTab">Error Chart</button>
+        
+                    <button class="tablinks" id="Iteration1Tab">Iteration 1</button>
+                
+                    <button class="tablinks" id="Iteration2Tab">Iteration 2</button>
+                
+                    <button class="tablinks" id="Iteration3Tab">Iteration 3</button>
+                
+                    <button class="tablinks" id="Iteration4Tab">Iteration 4</button>
+                
+                    <button class="tablinks" id="Iteration5Tab">Iteration 5</button>
+                
+                </div>
+                
+                <div id="ErrorChart" class="tabcontent" style="display: block;">
+                    <div id="plotly-chart"></div>
+        
+                    <div class="prompt-console" style="margin-top: 30px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <div class="console-header" style="background-color: #1E293B; padding: 10px 15px; border-bottom: 1px solid #475569;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #EF4444; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #F59E0B; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #10B981; margin-right: 8px;"></div>
+                                <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 14px;">Initial Prompt</span>
+                            </div>
+                        </div>
+                        <div class="console-body" style="background-color: #1E293B; padding: 15px; max-height: 350px; overflow-y: auto;">
+                            <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 14px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that implements a liquid staking protocol with these features:
+
+- A staking mechanism that accepts native SUI
+- A liquid staking token that represents the user&#039;s staked position
+- Rewards accrual and distribution system
+- Unstaking functionality with optional lock periods
+- Delegation to validators 
+- Proper security controls and access management
+
+Include helpful comments in your code to explain key mechanisms and design decisions.
+Ensure the code follows best practices for secure and efficient Sui Move development. 
+</pre>
+                        </div>
+                    </div>
+            
+                </div>
+        
+                <div id="Iteration1" class="tabcontent">
+                    <h3>Contract Source - Iteration 1</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 1</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #1E293B; padding: 8px 12px; border-bottom: 1px solid #475569;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #1E293B; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that implements a liquid staking protocol with these features:
+
+- A staking mechanism that accepts native SUI
+- A liquid staking token that represents the user&#039;s staked position
+- Rewards accrual and distribution system
+- Unstaking functionality with optional lock periods
+- Delegation to validators 
+- Proper security controls and access management
+
+Include helpful comments in your code to explain key mechanisms and design decisions.
+Ensure the code follows best practices for secure and efficient Sui Move development. 
+</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">address temp_addr {
+
+module my_module {
+
+    // Import Sui-specific transaction context to simulate coin transfers and global state management.
+    use sui::tx_context::TxContext;
+    use sui::object::UID;
+    use std::signer;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Data Structures                            //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Configuration resource for the staking pool.
+    // It is created once by the administrator and holds protocol-wide parameters.
+    struct Config has key {
+        admin: address,       // Administrator with special privileges.
+        reward_rate: u64,     // Reward rate per second.
+        lock_period: u64,     // Default lock period in seconds for staked funds.
+    }
+
+    // Resource representing an individual user&#039;s staked position.
+    // It tracks the deposit amount, the last time rewards were accrued,
+    // the timestamp until which unstaking is locked, and the delegated validator.
+    struct StakedPosition has key {
+        id: UID,              // Unique identifier for this position.
+        owner: address,       // Owner of the staked position.
+        deposit: u64,         // Amount staked (in native SUI units).
+        last_update: u64,     // Timestamp of the last rewards update.
+        lock_until: u64,      // Timestamp until which unstaking is locked.
+        delegated_validator: address, // The validator to which this stake is delegated.
+    }
+
+    // Resource representing the liquid staking token.
+    // This token is minted upon staking and serves as a tradable representation
+    // of the underlying staked asset plus accrued rewards.
+    struct LiquidStakedToken has key, store {
+        id: UID,         // Unique identifier for the token.
+        owner: address,  // Owner of the liquid token.
+        amount: u64,     // The staked amount represented by this token.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                               Error Codes                              //
+    ////////////////////////////////////////////////////////////////////////////
+
+    const ENOT_ADMIN: u64 = 0;             // Caller is not the administrator.
+    const ELOCKED: u64 = 1;                // Attempt to unstake before lock period expires.
+    const E_NOT_OWNER: u64 = 2;            // Caller does not own the resource.
+    const E_INSUFFICIENT_AMOUNT: u64 = 3;    // Deposit amount must be greater than zero.
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Initialization Function                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Initialize the staking pool configuration.
+    // This function should only be called once by the protocol administrator.
+    public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+        Config {
+            admin: signer::address_of(admin),
+            reward_rate,
+            lock_period,
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Staking Functionality                         //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Stake function:
+    // Allows a user to stake a specified amount (simulated as a u64 value)
+    // and delegate the stake to a chosen validator.
+    // The &#039;lock&#039; flag indicates whether the funds are subject to a lock period.
+    //
+    // In a production environment, the &#039;deposit&#039; would be provided as a Coin&lt;SUI&gt;
+    // object transferred into the pool.
+    //
+    // Returns:
+    // - A new StakedPosition resource representing the user&#039;s locked stake.
+    // - A corresponding LiquidStakedToken resource minted to represent the liquid stake.
+    public fun stake(
+        staker: &amp;signer,
+        deposit: u64,
+        delegate: address,
+        lock: bool,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): (StakedPosition, LiquidStakedToken) {
+        // Ensure a positive deposit amount.
+        assert!(deposit &gt; 0, E_INSUFFICIENT_AMOUNT);
+
+        let owner = signer::address_of(staker);
+        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };
+
+        // Create a new staked position with a fresh UID.
+        let position = StakedPosition {
+            id: UID::new(ctx),
+            owner,
+            deposit,
+            last_update: current_time,
+            lock_until,
+            delegated_validator: delegate,
+        };
+
+        // Mint a liquid staking token with a unique identifier.
+        let liquid = LiquidStakedToken {
+            id: UID::new(ctx),
+            owner,
+            amount: deposit,
+        };
+
+        (position, liquid)
+    }
+
+    // Internal helper function to accrue rewards on a staked position.
+    // Rewards are calculated based on elapsed time since the last update and the global reward rate.
+    // Updates the last_update field of the position.
+    fun accrue_rewards(position: &amp;mut StakedPosition, current_time: u64, reward_rate: u64): u64 {
+        let elapsed: u64 = current_time - position.last_update;
+        let reward: u64 = elapsed * reward_rate;
+        position.last_update = current_time;
+        reward
+    }
+
+    // Claim rewards function:
+    // Allows a staker to claim accrued rewards without unstaking.
+    // Returns the amount of rewards accrued since the last claim.
+    public fun claim_rewards(
+        staker: &amp;signer,
+        position: &amp;mut StakedPosition,
+        current_time: u64,
+        config: &amp;Config
+    ): u64 {
+        let caller = signer::address_of(staker);
+        // Ensure that only the owner of the staked position can claim rewards.
+        assert!(caller == position.owner, E_NOT_OWNER);
+
+        let reward: u64 = accrue_rewards(position, current_time, config.reward_rate);
+
+        // In a real implementation, rewards could be minted or transferred to the user here.
+        // For simulation purposes, we simply return the computed reward.
+        reward
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Unstaking Functionality                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Unstake function:
+    // Allows a user to redeem their staked funds along with any accrued rewards.
+    // The caller must provide both the StakedPosition and its corresponding LiquidStakedToken.
+    //
+    // Preconditions:
+    // - The caller must be the owner of both resources.
+    // - The current time must be greater than or equal to the lock_until timestamp.
+    //
+    // Postconditions:
+    // - The liquid token is burned (dropped) and the staked position is consumed.
+    // - The total amount (original deposit plus rewards) is returned.
+    //
+    // In a full implementation, this function would transfer native SUI coins back to the staker.
+    public fun unstake(
+        staker: &amp;signer,
+        position: StakedPosition,
+        liquid: LiquidStakedToken,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): u64 {
+        let caller = signer::address_of(staker);
+
+        // Verify the staker owns the staked position.
+        assert!(caller == position.owner, E_NOT_OWNER);
+        // Verify the staker owns the liquid token.
+        assert!(caller == liquid.owner, E_NOT_OWNER);
+
+        // Ensure that the lock period has expired.
+        assert!(current_time &gt;= position.lock_until, ELOCKED);
+
+        // Calculate accrued rewards from the last update until now.
+        let reward: u64 = (current_time - position.last_update) * config.reward_rate;
+        let total_amount: u64 = position.deposit + reward;
+
+        // Burn the liquid staking token by dropping it.
+        // In an actual implementation, token burning logic would be more sophisticated.
+        drop(liquid);
+        // Consuming the staked position resource.
+        drop(position);
+
+        // Simulate transferring native SUI coins back to the user by returning the total amount.
+        // In production, this would involve creating a Coin&lt;SUI&gt; object and transferring it.
+        total_amount
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Delegation Functionality                        //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // In this simplified implementation, delegation is handled at the time of staking.
+    // The &#039;delegate&#039; parameter in the stake() function specifies which validator
+    // the staked funds will be delegated to. The delegated validator address is stored
+    // in the StakedPosition resource.
+    //
+    // Future extensions could include functions to re-delegate or update validator preferences.
+    
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Helper Functions                              //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Custom assert function that aborts with the specified error code if the condition is false.
+    fun assert(condition: bool, error_code: u64) {
+        if (!condition) {
+            abort error_code;
+        }
+    }
+}
+
+}</code></pre>
+                </div>
+                
+                <div id="Iteration2" class="tabcontent">
+                    <h3>Contract Source - Iteration 2</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 2</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #1E293B; padding: 8px 12px; border-bottom: 1px solid #475569;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #1E293B; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+error[E13002]: feature is deprecated in specified edition
+  ┌─ ./sources/temp_contract.move:1:1
+  │
+1 │ address temp_addr {
+  │ ^^^^^^^ &#039;address&#039; blocks are deprecated. Use addresses directly in module definitions instead.
+2 │ 
+3 │ module my_module {
+  │        --------- Replace with &#039;temp_addr::my_module&#039;
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:6:26
+  │
+6 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:7:22
+  │
+7 │     use sui::object::UID;
+  │                      ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:8:9
+  │
+8 │     use std::signer;
+  │         ^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;std::signer&#039;
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:16:5
+   │
+16 │     struct Config has key {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02007]: invalid object declaration
+   ┌─ ./sources/temp_contract.move:17:9
+   │
+16 │     struct Config has key {
+   │                       --- The &#039;key&#039; ability is used to declare objects in Sui
+17 │         admin: address,       // Administrator with special privileges.
+   │         ^^^^^ Invalid object &#039;Config&#039;. Structs with the &#039;key&#039; ability must have &#039;id: sui::object::UID&#039; as their first field
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:25:5
+   │
+25 │     struct StakedPosition has key {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:37:5
+   │
+37 │     struct LiquidStakedToken has key, store {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+warning[W09011]: unused constant
+   ┌─ ./sources/temp_contract.move:47:11
+   │
+47 │     const ENOT_ADMIN: u64 = 0;             // Caller is not the administrator.
+   │           ^^^^^^^^^^ The constant &#039;ENOT_ADMIN&#039; is never used. Consider removing it.
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_const)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[Sui E02003]: invalid &#039;init&#039; function
+   ┌─ ./sources/temp_contract.move:58:16
+   │
+58 │     public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+   │     ------     ^^^^ Invalid &#039;init&#039; function declaration
+   │     │           
+   │     &#039;init&#039; functions must be internal to their module
+
+error[Sui E02003]: invalid &#039;init&#039; function
+   ┌─ ./sources/temp_contract.move:58:16
+   │
+58 │     public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+   │                ^^^^        ------- Invalid parameter &#039;admin&#039; of type &#039;&amp;signer&#039;. Expected a one-time witness type, &#039;temp_addr::my_module::MY_MODULE
+   │                │            
+   │                Invalid &#039;init&#039; function declaration
+   │
+   = One-time witness types are structs with the following requirements: their name is the upper-case version of the module&#039;s name, they have no fields (or a single boolean field), they have no type parameters, and they have only the &#039;drop&#039; ability.
+
+error[Sui E02003]: invalid &#039;init&#039; function
+   ┌─ ./sources/temp_contract.move:58:16
+   │
+58 │     public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+   │                ^^^^                                   ----------- &#039;init&#039; functions can have at most two parameters
+   │                │                                       
+   │                Invalid &#039;init&#039; function declaration
+
+error[Sui E02003]: invalid &#039;init&#039; function
+   ┌─ ./sources/temp_contract.move:58:16
+   │
+58 │     public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+   │                ^^^^                                                --- &#039;init&#039; functions must have their last parameter as &#039;&amp;sui::tx_context::TxContext&#039; or &#039;&amp;mut sui::tx_context::TxContext&#039;
+   │                │                                                    
+   │                Invalid &#039;init&#039; function declaration
+
+error[Sui E02003]: invalid &#039;init&#039; function
+   ┌─ ./sources/temp_contract.move:58:16
+   │
+58 │     public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+   │                ^^^^                                                      ------ &#039;init&#039; functions must have a return type of &#039;()&#039;
+   │                │                                                          
+   │                Invalid &#039;init&#039; function declaration
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:58:21
+   │
+58 │     public fun init(admin: &amp;signer, reward_rate: u64, lock_period: u64): Config {
+   │                     ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:60:20
+   │
+60 │             admin: signer::address_of(admin),
+   │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:82:9
+   │
+82 │         staker: &amp;signer,
+   │         ^^^^^^ Unused parameter &#039;staker&#039;. Consider removing or prefixing with an underscore: &#039;_staker&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:93:21
+   │
+93 │         let owner = signer::address_of(staker);
+   │                     ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:98:17
+   │
+98 │             id: UID::new(ctx),
+   │                 ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:108:17
+    │
+108 │             id: UID::new(ctx),
+    │                 ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:130:9
+    │
+130 │         staker: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;staker&#039;. Consider removing or prefixing with an underscore: &#039;_staker&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:135:22
+    │
+135 │         let caller = signer::address_of(staker);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:164:9
+    │
+164 │         staker: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;staker&#039;. Consider removing or prefixing with an underscore: &#039;_staker&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:169:9
+    │
+169 │         ctx: &amp;mut TxContext
+    │         ^^^ Unused parameter &#039;ctx&#039;. Consider removing or prefixing with an underscore: &#039;_ctx&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:171:22
+    │
+171 │         let caller = signer::address_of(staker);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03005]: unbound unscoped name
+    ┌─ ./sources/temp_contract.move:187:9
+    │
+187 │         drop(liquid);
+    │         ^^^^ Unbound function &#039;drop&#039; in current scope
+
+error[E03005]: unbound unscoped name
+    ┌─ ./sources/temp_contract.move:189:9
+    │
+189 │         drop(position);
+    │         ^^^^ Unbound function &#039;drop&#039; in current scope
+
+warning[W09008]: unused function
+    ┌─ ./sources/temp_contract.move:212:9
+    │
+212 │     fun assert(condition: bool, error_code: u64) {
+    │         ^^^^^^ The non-&#039;public&#039;, non-&#039;entry&#039; function &#039;assert&#039; is never called. Consider removing it.
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_function)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03011]: invalid use of reserved name
+    ┌─ ./sources/temp_contract.move:212:9
+    │
+212 │     fun assert(condition: bool, error_code: u64) {
+    │         ^^^^^^ Invalid function name &#039;assert&#039;. &#039;assert&#039; is restricted and cannot be used to name a function
+
+
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import necessary modules from the Sui framework.
+    use sui::tx_context::TxContext;
+    use sui::object::{UID, move_to};
+    use sui::framework::signer;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Error Codes                                //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Error code for attempting to unstake before the lock period expires.
+    const ELOCKED: u64 = 1;
+    // Error code for operations attempted by a non-owner of a resource.
+    const E_NOT_OWNER: u64 = 2;
+    // Error code for providing an insufficient deposit amount.
+    const E_INSUFFICIENT_AMOUNT: u64 = 3;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Data Structures                            //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // The global configuration object for the staking pool.
+    // All objects with the &#039;key&#039; ability must have an &#039;id&#039; field of type UID as the first field.
+    public struct Config has key {
+        id: UID,               // Unique identifier for the configuration object.
+        admin: address,        // Administrator with special privileges.
+        reward_rate: u64,      // Reward rate per second.
+        lock_period: u64,      // Default lock period in seconds for staked funds.
+    }
+
+    // Resource representing an individual user&#039;s staked position.
+    public struct StakedPosition has key {
+        id: UID,                       // Unique identifier for this position.
+        owner: address,                // Owner of the staked position.
+        deposit: u64,                  // Amount staked (in native SUI units).
+        last_update: u64,              // Timestamp of the last rewards update.
+        lock_until: u64,               // Timestamp until which unstaking is locked.
+        delegated_validator: address,  // The validator to which this stake is delegated.
+    }
+
+    // Resource representing the liquid staking token that is minted alongside staking.
+    public struct LiquidStakedToken has key, store {
+        id: UID,         // Unique identifier for the token.
+        owner: address,  // Owner of the liquid token.
+        amount: u64,     // The staked amount represented by this token.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Initialization Function                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Public entry function to initialize the staking pool configuration.
+    // It creates a Config resource and moves it into the admin&#039;s account.
+    // Note: In Sui Move, functions named &quot;initialize&quot; are regular public entry functions.
+    public entry fun initialize(admin: &amp;signer, reward_rate: u64, lock_period: u64, ctx: &amp;mut TxContext) {
+        let config = Config {
+            id: UID::new(ctx),
+            admin: signer::address_of(admin),
+            reward_rate,
+            lock_period,
+        };
+        move_to(admin, config);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Staking Functionality                         //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Stake function:
+    // Allows a user to stake a specified amount and delegate the stake to a chosen validator.
+    //
+    // Parameters:
+    // - staker: The signer initiating the stake.
+    // - deposit: The amount to stake.
+    // - delegate: The address of the validator to delegate to.
+    // - lock: A flag indicating if the stake should be locked for a period.
+    // - current_time: The current timestamp.
+    // - config: A reference to the global configuration.
+    // - ctx: Transaction context for object creation.
+    //
+    // Returns:
+    // - A new StakedPosition resource representing the user&#039;s staked funds.
+    // - A corresponding LiquidStakedToken resource minted to represent the liquid stake.
+    public fun stake(
+        staker: &amp;signer,
+        deposit: u64,
+        delegate: address,
+        lock: bool,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): (StakedPosition, LiquidStakedToken) {
+        // Ensure the deposit amount is greater than zero.
+        check(deposit &gt; 0, E_INSUFFICIENT_AMOUNT);
+
+        let owner = signer::address_of(staker);
+        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };
+
+        // Create a new staked position with a fresh UID.
+        let position = StakedPosition {
+            id: UID::new(ctx),
+            owner,
+            deposit,
+            last_update: current_time,
+            lock_until,
+            delegated_validator: delegate,
+        };
+
+        // Mint a liquid staking token with a unique identifier.
+        let liquid = LiquidStakedToken {
+            id: UID::new(ctx),
+            owner,
+            amount: deposit,
+        };
+
+        (position, liquid)
+    }
+
+    // Internal helper function to accrue rewards on a staked position.
+    // Rewards are computed based on the elapsed time since the last update.
+    // Updates the last_update field of the position to the current time.
+    fun accrue_rewards(position: &amp;mut StakedPosition, current_time: u64, reward_rate: u64): u64 {
+        let elapsed: u64 = current_time - position.last_update;
+        let reward: u64 = elapsed * reward_rate;
+        position.last_update = current_time;
+        reward
+    }
+
+    // Claim rewards function:
+    // Allows the owner of a staked position to claim accrued rewards without unstaking.
+    // Returns the amount of rewards accrued since the last claim.
+    public fun claim_rewards(
+        staker: &amp;signer,
+        position: &amp;mut StakedPosition,
+        current_time: u64,
+        config: &amp;Config
+    ): u64 {
+        let caller = signer::address_of(staker);
+        // Ensure that only the owner of the staked position can claim rewards.
+        check(caller == position.owner, E_NOT_OWNER);
+
+        let reward: u64 = accrue_rewards(position, current_time, config.reward_rate);
+        reward
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Unstaking Functionality                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Unstake function:
+    // Allows a user to redeem their staked funds along with any accrued rewards.
+    // Preconditions:
+    // - The staker must be the owner of both the staked position and its liquid token.
+    // - The current time must be greater than or equal to the lock_until timestamp.
+    //
+    // Postconditions:
+    // - The liquid token and staked position resources are consumed.
+    // - The sum of the original deposit and accrued rewards is returned.
+    public fun unstake(
+        staker: &amp;signer,
+        position: StakedPosition,
+        liquid: LiquidStakedToken,
+        current_time: u64,
+        config: &amp;Config,
+        _ctx: &amp;mut TxContext
+    ): u64 {
+        let caller = signer::address_of(staker);
+
+        // Verify ownership of the staked position.
+        check(caller == position.owner, E_NOT_OWNER);
+        // Verify ownership of the liquid token.
+        check(caller == liquid.owner, E_NOT_OWNER);
+        // Ensure that the lock period has expired.
+        check(current_time &gt;= position.lock_until, ELOCKED);
+
+        // Calculate accrued rewards since the last update.
+        let reward: u64 = (current_time - position.last_update) * config.reward_rate;
+        let total_amount: u64 = position.deposit + reward;
+
+        // Resources are consumed by going out of scope.
+        total_amount
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Helper Functions                              //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Helper function to check a condition and abort with the specified error code if false.
+    fun check(condition: bool, error_code: u64) {
+        if (!condition) {
+            abort error_code;
+        }
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration3" class="tabcontent">
+                    <h3>Contract Source - Iteration 3</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 3</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #1E293B; padding: 8px 12px; border-bottom: 1px solid #475569;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #1E293B; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:4:26
+  │
+4 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:23
+  │
+5 │     use sui::object::{UID, move_to};
+  │                       ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03003]: unbound module member
+  ┌─ ./sources/temp_contract.move:5:28
+  │
+5 │     use sui::object::{UID, move_to};
+  │                            ^^^^^^^ Invalid &#039;use&#039;. Unbound member &#039;move_to&#039; in module &#039;sui::object&#039;
+  │
+  ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13
+  │
+5 │ module sui::object;
+  │             ------ Module &#039;sui::object&#039; declared here
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:6:9
+  │
+6 │     use sui::framework::signer;
+  │         ^^^^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;sui::framework&#039;
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:58:17
+   │
+58 │             id: UID::new(ctx),
+   │                 ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:59:20
+   │
+59 │             admin: signer::address_of(admin),
+   │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03005]: unbound unscoped name
+   ┌─ ./sources/temp_contract.move:63:9
+   │
+63 │         move_to(admin, config);
+   │         ^^^^^^^ Unbound function &#039;move_to&#039; in current scope
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:86:9
+   │
+86 │         staker: &amp;signer,
+   │         ^^^^^^ Unused parameter &#039;staker&#039;. Consider removing or prefixing with an underscore: &#039;_staker&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:97:21
+   │
+97 │         let owner = signer::address_of(staker);
+   │                     ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:102:17
+    │
+102 │             id: UID::new(ctx),
+    │                 ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:112:17
+    │
+112 │             id: UID::new(ctx),
+    │                 ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:134:9
+    │
+134 │         staker: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;staker&#039;. Consider removing or prefixing with an underscore: &#039;_staker&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:139:22
+    │
+139 │         let caller = signer::address_of(staker);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:161:9
+    │
+161 │         staker: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;staker&#039;. Consider removing or prefixing with an underscore: &#039;_staker&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:168:22
+    │
+168 │         let caller = signer::address_of(staker);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+
+[bold]Delta Changes:[/bold] Errors: [red]-14[/red] | Compiler Warnings: [yellow]-4[/yellow] | Linter Warnings: [blue]+0[/blue]
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import necessary modules from the Sui framework.
+    use sui::tx_context::TxContext;
+    use sui::object::{UID, new_uid};
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Error Codes                                //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Error code for attempting to unstake before the lock period expires.
+    const ELOCKED: u64 = 1;
+    // Error code when an operation is attempted by a non-owner.
+    const E_NOT_OWNER: u64 = 2;
+    // Error code for providing an insufficient deposit amount.
+    const E_INSUFFICIENT_AMOUNT: u64 = 3;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Data Structures                            //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Global configuration resource for the staking pool.
+    // All objects with the &#039;key&#039; ability must have an &#039;id&#039; field of type UID as their first field.
+    public struct Config has key {
+        id: UID,               // Unique identifier for the configuration object.
+        admin: address,        // Administrator with special privileges.
+        reward_rate: u64,      // Reward rate per second.
+        lock_period: u64,      // Default lock period in seconds for staked funds.
+    }
+
+    // Resource representing an individual user&#039;s staked position.
+    public struct StakedPosition has key {
+        id: UID,                       // Unique identifier for this position.
+        owner: address,                // Owner of the staked position.
+        deposit: u64,                  // Amount staked (in native SUI units).
+        last_update: u64,              // Timestamp of the last rewards update.
+        lock_until: u64,               // Timestamp until which unstaking is locked.
+        delegated_validator: address,  // The validator to which this stake is delegated.
+    }
+
+    // Resource representing the liquid staking token minted alongside staking.
+    public struct LiquidStakedToken has key, store {
+        id: UID,         // Unique identifier for the token.
+        owner: address,  // Owner of the liquid token.
+        amount: u64,     // The staked amount represented by this token.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Initialization Function                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Entry function to initialize the staking pool configuration.
+    // Instead of using the built-in move_to (which is unavailable in this context),
+    // this function returns the created Config resource. The caller is responsible
+    // for publishing the returned object.
+    public entry fun init_config(admin: &amp;signer, reward_rate: u64, lock_period: u64, ctx: &amp;mut TxContext): Config {
+        let config = Config {
+            id: new_uid(ctx),
+            // Use the transaction context&#039;s sender as the admin address.
+            admin: TxContext::sender(ctx),
+            reward_rate,
+            lock_period,
+        };
+        config
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Staking Functionality                         //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Stake function:
+    // Allows a user to stake a specified amount and delegate their stake to a chosen validator.
+    //
+    // Parameters:
+    // - staker: The signer initiating the stake.
+    // - deposit: The amount to stake.
+    // - delegate: The address of the validator to delegate to.
+    // - lock: A flag indicating if the stake should be locked for the configured period.
+    // - current_time: The current timestamp.
+    // - config: A reference to the global configuration.
+    // - ctx: Transaction context used for generating unique IDs.
+    //
+    // Returns:
+    // - A new StakedPosition resource representing the user&#039;s staked funds.
+    // - A corresponding LiquidStakedToken resource minted to represent the liquid stake.
+    public fun stake(
+        _staker: &amp;signer,
+        deposit: u64,
+        delegate: address,
+        lock: bool,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): (StakedPosition, LiquidStakedToken) {
+        // Ensure the deposit amount is greater than zero.
+        check(deposit &gt; 0, E_INSUFFICIENT_AMOUNT);
+
+        // Retrieve the caller&#039;s address from the transaction context.
+        let owner = TxContext::sender(ctx);
+        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };
+
+        // Create a new staked position with a unique identifier.
+        let position = StakedPosition {
+            id: new_uid(ctx),
+            owner,
+            deposit,
+            last_update: current_time,
+            lock_until,
+            delegated_validator: delegate,
+        };
+
+        // Mint a liquid staking token with a unique identifier.
+        let liquid = LiquidStakedToken {
+            id: new_uid(ctx),
+            owner,
+            amount: deposit,
+        };
+
+        (position, liquid)
+    }
+
+    // Internal helper function to accrue rewards on a staked position.
+    // Rewards are computed based on the elapsed time since the last update.
+    // This function updates the last_update field of the position and returns
+    // the computed reward amount.
+    fun accrue_rewards(position: &amp;mut StakedPosition, current_time: u64, reward_rate: u64): u64 {
+        let elapsed: u64 = current_time - position.last_update;
+        let reward: u64 = elapsed * reward_rate;
+        position.last_update = current_time;
+        reward
+    }
+
+    // Claim rewards function:
+    // Allows the owner of a staked position to claim accrued rewards without unstaking.
+    // Preconditions:
+    // - The caller must be the owner of the staked position.
+    //
+    // Returns the amount of rewards accrued since the last claim.
+    public fun claim_rewards(
+        _staker: &amp;signer,
+        position: &amp;mut StakedPosition,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): u64 {
+        let caller = TxContext::sender(ctx);
+        check(caller == position.owner, E_NOT_OWNER);
+
+        let reward: u64 = accrue_rewards(position, current_time, config.reward_rate);
+        reward
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Unstaking Functionality                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Unstake function:
+    // Allows a user to redeem their staked funds along with any accrued rewards.
+    //
+    // Preconditions:
+    // - The caller must be the owner of both the staked position and its corresponding liquid token.
+    // - The current time must be greater than or equal to the lock_until timestamp.
+    //
+    // Postconditions:
+    // - Both the liquid token and staked position resources are consumed.
+    // - Returns the total amount (original deposit plus accrued rewards).
+    public fun unstake(
+        _staker: &amp;signer,
+        position: StakedPosition,
+        liquid: LiquidStakedToken,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): u64 {
+        let caller = TxContext::sender(ctx);
+        check(caller == position.owner, E_NOT_OWNER);
+        check(caller == liquid.owner, E_NOT_OWNER);
+        check(current_time &gt;= position.lock_until, ELOCKED);
+
+        // Calculate accrued rewards from the last update until now.
+        let reward: u64 = (current_time - position.last_update) * config.reward_rate;
+        let total_amount: u64 = position.deposit + reward;
+
+        // Resources (position and liquid token) are consumed when they go out of scope.
+        total_amount
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Helper Functions                              //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Helper function to check a condition and abort with the specified error code if false.
+    fun check(condition: bool, error_code: u64) {
+        if (!condition) {
+            abort error_code;
+        }
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration4" class="tabcontent">
+                    <h3>Contract Source - Iteration 4</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 4</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #1E293B; padding: 8px 12px; border-bottom: 1px solid #475569;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #1E293B; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:4:26
+  │
+4 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:23
+  │
+5 │     use sui::object::{UID, new_uid};
+  │                       ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03003]: unbound module member
+  ┌─ ./sources/temp_contract.move:5:28
+  │
+5 │     use sui::object::{UID, new_uid};
+  │                            ^^^^^^^ Invalid &#039;use&#039;. Unbound member &#039;new_uid&#039; in module &#039;sui::object&#039;
+  │
+  ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13
+  │
+5 │ module sui::object;
+  │             ------ Module &#039;sui::object&#039; declared here
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:56:12
+   │
+24 │     public struct Config has key {
+   │                   ------ To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+   ·
+56 │     public entry fun init_config(admin: &amp;signer, reward_rate: u64, lock_period: u64, ctx: &amp;mut TxContext): Config {
+   │            ^^^^^                                                                                           ------ The type &#039;temp_addr::my_module::Config&#039; does not have the ability &#039;drop&#039;
+   │            │                                                                                                
+   │            Invalid return type for entry function &#039;init_config&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:56:34
+   │
+56 │     public entry fun init_config(admin: &amp;signer, reward_rate: u64, lock_period: u64, ctx: &amp;mut TxContext): Config {
+   │                                  ^^^^^ Unused parameter &#039;admin&#039;. Consider removing or prefixing with an underscore: &#039;_admin&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03005]: unbound unscoped name
+   ┌─ ./sources/temp_contract.move:58:17
+   │
+58 │             id: new_uid(ctx),
+   │                 ^^^^^^^ Unbound function &#039;new_uid&#039; in current scope
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:60:20
+   │
+60 │             admin: TxContext::sender(ctx),
+   │                    ^^^^^^^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+   │
+21 │ public struct TxContext has drop {
+   │               --------- But &#039;TxContext&#039; is an struct
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:99:21
+   │
+99 │         let owner = TxContext::sender(ctx);
+   │                     ^^^^^^^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+   │
+21 │ public struct TxContext has drop {
+   │               --------- But &#039;TxContext&#039; is an struct
+
+error[E03005]: unbound unscoped name
+    ┌─ ./sources/temp_contract.move:104:17
+    │
+104 │             id: new_uid(ctx),
+    │                 ^^^^^^^ Unbound function &#039;new_uid&#039; in current scope
+
+error[E03005]: unbound unscoped name
+    ┌─ ./sources/temp_contract.move:114:17
+    │
+114 │             id: new_uid(ctx),
+    │                 ^^^^^^^ Unbound function &#039;new_uid&#039; in current scope
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:146:22
+    │
+146 │         let caller = TxContext::sender(ctx);
+    │                      ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:175:22
+    │
+175 │         let caller = TxContext::sender(ctx);
+    │                      ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+
+[bold]Delta Changes:[/bold] Errors: [red]-3[/red] | Compiler Warnings: [yellow]-2[/yellow] | Linter Warnings: [blue]+0[/blue]
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import necessary modules.
+    use sui::tx_context::TxContext;
+    use sui::object::UID;
+    use 0x1::signer;
+
+    // Declare the native move_to function to publish an object to an account.
+    native public fun move_to&lt;T: store&gt;(acc: &amp;signer, obj: T);
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Error Codes                                //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Error code for attempting to unstake before the lock period expires.
+    const ELOCKED: u64 = 1;
+    // Error code when an operation is attempted by a non-owner.
+    const E_NOT_OWNER: u64 = 2;
+    // Error code for providing an insufficient deposit amount.
+    const E_INSUFFICIENT_AMOUNT: u64 = 3;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Data Structures                            //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Global configuration resource for the staking pool.
+    // Note: The &#039;drop&#039; ability is added to allow the object to be safely stored and later consumed.
+    public struct Config has key, drop {
+        id: UID,            // Unique identifier for the configuration object.
+        admin: address,     // Administrator with special privileges.
+        reward_rate: u64,   // Reward rate per second.
+        lock_period: u64,   // Default lock period (in seconds) for staked funds.
+    }
+
+    // Resource representing an individual user&#039;s staked position.
+    public struct StakedPosition has key, drop {
+        id: UID,                      // Unique identifier for this position.
+        owner: address,               // Owner of the staked position.
+        deposit: u64,                 // Amount staked.
+        last_update: u64,             // Timestamp of the last rewards update.
+        lock_until: u64,              // Timestamp until which unstaking is locked.
+        delegated_validator: address, // The validator to which this stake is delegated.
+    }
+
+    // Resource representing the liquid staking token.
+    // This token is minted upon staking and represents the staked amount.
+    public struct LiquidStakedToken has key, store {
+        id: UID,         // Unique identifier for the token.
+        owner: address,  // Owner of the liquid token.
+        amount: u64,     // The staked amount represented by this token.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Initialization Function                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Entry function to initialize the staking pool configuration.
+    // It creates a Config resource and publishes it to the admin&#039;s account.
+    public entry fun init_config(admin: &amp;signer, reward_rate: u64, lock_period: u64, ctx: &amp;mut TxContext) {
+        // Generate a unique identifier for the Config.
+        let config_uid = UID::new(ctx);
+        let config = Config {
+            id: config_uid,
+            admin: signer::address_of(admin),
+            reward_rate,
+            lock_period,
+        };
+        // Publish the Config object to the admin&#039;s account.
+        move_to(admin, config);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Staking Functionality                         //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Stake function:
+    // Allows a user to stake a specified deposit and delegate their stake to a chosen validator.
+    //
+    // Parameters:
+    // - _staker: The signer initiating the stake.
+    // - deposit: The amount to stake.
+    // - delegate: The address of the validator to delegate to.
+    // - lock: A flag indicating if the stake should be locked for the configured period.
+    // - current_time: The current timestamp.
+    // - config: A reference to the global configuration.
+    // - ctx: Transaction context used for generating unique IDs.
+    //
+    // Returns:
+    // - A new StakedPosition resource representing the user&#039;s staked funds.
+    // - A corresponding LiquidStakedToken resource representing the liquid stake.
+    public fun stake(
+        _staker: &amp;signer,
+        deposit: u64,
+        delegate: address,
+        lock: bool,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): (StakedPosition, LiquidStakedToken) {
+        // Ensure a positive deposit amount.
+        check(deposit &gt; 0, E_INSUFFICIENT_AMOUNT);
+
+        // Retrieve the staker&#039;s address.
+        let owner = signer::address_of(_staker);
+        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };
+
+        // Create a new staked position with a unique identifier.
+        let pos_uid = UID::new(ctx);
+        let position = StakedPosition {
+            id: pos_uid,
+            owner,
+            deposit,
+            last_update: current_time,
+            lock_until,
+            delegated_validator: delegate,
+        };
+
+        // Mint a liquid staking token with a unique identifier.
+        let liq_uid = UID::new(ctx);
+        let liquid = LiquidStakedToken {
+            id: liq_uid,
+            owner,
+            amount: deposit,
+        };
+
+        (position, liquid)
+    }
+
+    // Internal helper function to accumulate rewards over time.
+    // It computes rewards based on the elapsed time since the last update,
+    // updates the last_update timestamp, and returns the computed reward.
+    fun accrue_rewards(position: &amp;mut StakedPosition, current_time: u64, reward_rate: u64): u64 {
+        let elapsed = current_time - position.last_update;
+        let reward = elapsed * reward_rate;
+        position.last_update = current_time;
+        reward
+    }
+
+    // Claim rewards function:
+    // Allows the owner of a staked position to claim accrued rewards without unstaking.
+    //
+    // Parameters:
+    // - _staker: The signer claiming rewards.
+    // - position: A mutable reference to the staked position.
+    // - current_time: The current timestamp.
+    // - config: A reference to the global configuration.
+    //
+    // Returns the amount of rewards accrued since the last claim.
+    public fun claim_rewards(
+        _staker: &amp;signer,
+        position: &amp;mut StakedPosition,
+        current_time: u64,
+        config: &amp;Config
+    ): u64 {
+        let caller = signer::address_of(_staker);
+        // Verify ownership.
+        check(caller == position.owner, E_NOT_OWNER);
+        let reward = accrue_rewards(position, current_time, config.reward_rate);
+        reward
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Unstaking Functionality                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Unstake function:
+    // Allows a user to redeem their staked funds along with accrued rewards.
+    //
+    // Preconditions:
+    // - The caller must be the owner of both the staked position and its associated liquid token.
+    // - The current timestamp must be greater than or equal to the lock_until timestamp.
+    //
+    // Postconditions:
+    // - Consumes both the staked position and liquid token resources.
+    // - Returns the total amount (original deposit plus accrued rewards).
+    public fun unstake(
+        _staker: &amp;signer,
+        position: StakedPosition,
+        liquid: LiquidStakedToken,
+        current_time: u64,
+        config: &amp;Config
+    ): u64 {
+        let caller = signer::address_of(_staker);
+        check(caller == position.owner, E_NOT_OWNER);
+        check(caller == liquid.owner, E_NOT_OWNER);
+        check(current_time &gt;= position.lock_until, ELOCKED);
+        let reward = (current_time - position.last_update) * config.reward_rate;
+        let total_amount = position.deposit + reward;
+        total_amount
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Helper Functions                              //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Helper function to validate a condition and abort with a specific error code if false.
+    fun check(condition: bool, error_code: u64) {
+        if (!condition) {
+            abort error_code;
+        }
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration5" class="tabcontent">
+                    <h3>Contract Source - Iteration 5</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 5</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #1E293B; padding: 8px 12px; border-bottom: 1px solid #475569;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #E2E8F0; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #1E293B; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #E2E8F0; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:4:26
+  │
+4 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:22
+  │
+5 │     use sui::object::UID;
+  │                      ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:6:9
+  │
+6 │     use 0x1::signer;
+  │         ^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;0x1::signer&#039;
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:29:13
+   │
+29 │         id: UID,            // Unique identifier for the configuration object.
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:37:13
+   │
+37 │         id: UID,                      // Unique identifier for this position.
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:61:26
+   │
+61 │         let config_uid = UID::new(ctx);
+   │                          ^^^ Invalid construction. Expected an enum
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:64:20
+   │
+64 │             admin: signer::address_of(admin),
+   │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:69:9
+   │  
+ 9 │       native public fun move_to&lt;T: store&gt;(acc: &amp;signer, obj: T);
+   │                                    ----- &#039;store&#039; constraint declared here
+   ·  
+28 │       public struct Config has key, drop {
+   │                     ------ To satisfy the constraint, the &#039;store&#039; ability would need to be added here
+   ·  
+62 │           let config = Config {
+   │ ╭──────────────────────&#039;
+63 │ │             id: config_uid,
+64 │ │             admin: signer::address_of(admin),
+65 │ │             reward_rate,
+66 │ │             lock_period,
+67 │ │         };
+   │ ╰─────────&#039; The type &#039;temp_addr::my_module::Config&#039; does not have the ability &#039;store&#039;
+68 │           // Publish the Config object to the admin&#039;s account.
+69 │           move_to(admin, config);
+   │           ^^^^^^^^^^^^^^^^^^^^^^ &#039;store&#039; constraint not satisifed
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:104:21
+    │
+104 │         let owner = signer::address_of(_staker);
+    │                     ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:108:23
+    │
+108 │         let pos_uid = UID::new(ctx);
+    │                       ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:119:23
+    │
+119 │         let liq_uid = UID::new(ctx);
+    │                       ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:155:22
+    │
+155 │         let caller = signer::address_of(_staker);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:183:22
+    │
+183 │         let caller = signer::address_of(_staker);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+
+[bold]Delta Changes:[/bold] Errors: [red]+1[/red] | Compiler Warnings: [yellow]-1[/yellow] | Linter Warnings: [blue]+0[/blue]
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module temp_addr::my_module {
+
+    // Import necessary modules from the Sui framework.
+    use sui::tx_context::TxContext;
+    use sui::object::UID;
+    use sui::object::uid;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Error Codes                                //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Error code for attempting to unstake before the lock period expires.
+    const ELOCKED: u64 = 1;
+    // Error code when an operation is attempted by a non-owner.
+    const E_NOT_OWNER: u64 = 2;
+    // Error code for providing an insufficient deposit amount.
+    const E_INSUFFICIENT_AMOUNT: u64 = 3;
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Data Structures                            //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Global configuration resource for the staking pool.
+    // Objects published on-chain must have the `key` and `store` abilities.
+    public struct Config has key, store {
+        id: UID,              // Unique identifier for the configuration object.
+        admin: address,       // Administrator of the staking pool.
+        reward_rate: u64,     // Reward rate per second.
+        lock_period: u64,     // Default lock period (in seconds) for staked funds.
+    }
+
+    // Resource representing an individual user&#039;s staked position.
+    public struct StakedPosition has key, store {
+        id: UID,                      // Unique identifier for the position.
+        owner: address,               // Owner of the staked position.
+        deposit: u64,                 // Amount staked (in SUI units).
+        last_update: u64,             // Timestamp of the last rewards update.
+        lock_until: u64,              // Timestamp until which unstaking remains locked.
+        delegated_validator: address, // The validator to which the stake is delegated.
+    }
+
+    // Resource representing the liquid staking token.
+    // This token is minted when a user stakes, representing a tradable share of the stake.
+    public struct LiquidStakedToken has key, store {
+        id: UID,         // Unique identifier for the token.
+        owner: address,  // Owner of the liquid token.
+        amount: u64,     // The staked amount represented by this token.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Native Publishing Function                    //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Native function to publish an object to an account.
+    // The Move framework provides an intrinsic implementation.
+    native public fun move_to&lt;T: store&gt;(acc: &amp;signer, obj: T);
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Initialization Function                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Entry function to initialize the staking pool configuration.
+    // The caller becomes the administrator.
+    public entry fun init_config(admin: &amp;signer, reward_rate: u64, lock_period: u64, ctx: &amp;mut TxContext) {
+        let config_uid = uid::new(ctx);
+        // In Sui Move, the admin&#039;s address is inferred from the transaction context.
+        let admin_addr = TxContext::sender(ctx);
+        let config = Config {
+            id: config_uid,
+            admin: admin_addr,
+            reward_rate,
+            lock_period,
+        };
+        move_to(admin, config);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Staking Functionality                         //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Stake function:
+    // Allows a user to stake a specified deposit and delegate to a chosen validator.
+    // Parameters:
+    // - _staker: The signer initiating the stake.
+    // - deposit: The amount to stake.
+    // - delegate: The validator&#039;s address.
+    // - lock: If true, the staked funds are locked for the configured period.
+    // - current_time: The current timestamp.
+    // - config: Reference to the global configuration.
+    // - ctx: Transaction context for UID generation.
+    // Returns:
+    // - A new StakedPosition resource.
+    // - A LiquidStakedToken representing the staked amount.
+    public fun stake(
+        _staker: &amp;signer,
+        deposit: u64,
+        delegate: address,
+        lock: bool,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): (StakedPosition, LiquidStakedToken) {
+        check(deposit &gt; 0, E_INSUFFICIENT_AMOUNT);
+        let owner = TxContext::sender(ctx);
+        let lock_until = if (lock) { current_time + config.lock_period } else { current_time };
+        let pos_uid = uid::new(ctx);
+        let position = StakedPosition {
+            id: pos_uid,
+            owner,
+            deposit,
+            last_update: current_time,
+            lock_until,
+            delegated_validator: delegate,
+        };
+        let liq_uid = uid::new(ctx);
+        let liquid = LiquidStakedToken {
+            id: liq_uid,
+            owner,
+            amount: deposit,
+        };
+        (position, liquid)
+    }
+
+    // Internal helper to accrue rewards.
+    // Computes rewards based on the elapsed time since the last update.
+    fun accrue_rewards(position: &amp;mut StakedPosition, current_time: u64, reward_rate: u64): u64 {
+        let elapsed = current_time - position.last_update;
+        let reward = elapsed * reward_rate;
+        position.last_update = current_time;
+        reward
+    }
+
+    // Claim rewards function:
+    // Allows the owner of a staked position to claim accrued rewards without unstaking.
+    // Parameters:
+    // - _staker: The signer claiming rewards.
+    // - position: Mutable reference to the staked position.
+    // - current_time: The current timestamp.
+    // - config: Reference to the global configuration.
+    // - ctx: Transaction context to determine the caller.
+    // Returns: The accrued reward amount.
+    public fun claim_rewards(
+        _staker: &amp;signer,
+        position: &amp;mut StakedPosition,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): u64 {
+        let caller = TxContext::sender(ctx);
+        check(caller == position.owner, E_NOT_OWNER);
+        let reward = accrue_rewards(position, current_time, config.reward_rate);
+        reward
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Unstaking Functionality                       //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Unstake function:
+    // Allows a user to redeem their staked funds along with accrued rewards.
+    // Preconditions:
+    // - The caller must own both the staked position and associated liquid token.
+    // - The current time must be at or after the lock_until timestamp.
+    // Consumes the position and token.
+    // Returns: The total amount (deposit plus accrued rewards).
+    public fun unstake(
+        _staker: &amp;signer,
+        position: StakedPosition,
+        liquid: LiquidStakedToken,
+        current_time: u64,
+        config: &amp;Config,
+        ctx: &amp;mut TxContext
+    ): u64 {
+        let caller = TxContext::sender(ctx);
+        check(caller == position.owner, E_NOT_OWNER);
+        check(caller == liquid.owner, E_NOT_OWNER);
+        check(current_time &gt;= position.lock_until, ELOCKED);
+        let reward = (current_time - position.last_update) * config.reward_rate;
+        let total_amount = position.deposit + reward;
+        total_amount
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                          Helper Function                               //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Utility function to check conditions and abort with a given error code if false.
+    fun check(condition: bool, error_code: u64) {
+        if (!condition) {
+            abort error_code;
+        }
+    }
+}</code></pre>
+                </div>
+                
+                <script>
+                    // Legacy function for backward compatibility
+                    function openTab(evt, tabName) {
+                        var i, tabcontent, tablinks;
+                        tabcontent = document.getElementsByClassName("tabcontent");
+                        for (i = 0; i < tabcontent.length; i++) {
+                            tabcontent[i].style.display = "none";
+                        }
+                        tablinks = document.getElementsByClassName("tablinks");
+                        for (i = 0; i < tablinks.length; i++) {
+                            tablinks[i].className = tablinks[i].className.replace(" active", "");
+                        }
+                        document.getElementById(tabName).style.display = "block";
+                        evt.currentTarget.className += " active";
+                    }
+
+                    // Tab handling functions
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // First, hide all tab contents
+                        var tabcontents = document.getElementsByClassName("tabcontent");
+                        for (var i = 0; i < tabcontents.length; i++) {
+                            tabcontents[i].style.display = "none";
+                        }
+                        
+                        // Show the default tab
+                        document.getElementById("ErrorChart").style.display = "block";
+                        
+                        // Setup click handlers for tabs
+                        var tabs = document.getElementById("tabs").getElementsByTagName("button");
+                        for (var i = 0; i < tabs.length; i++) {
+                            tabs[i].addEventListener("click", function() {
+                                // Remove active class from all tabs
+                                for (var j = 0; j < tabs.length; j++) {
+                                    tabs[j].className = tabs[j].className.replace(" active", "");
+                                }
+                                
+                                // Add active class to clicked tab
+                                this.className += " active";
+                                
+                                // Hide all tab contents
+                                for (var j = 0; j < tabcontents.length; j++) {
+                                    tabcontents[j].style.display = "none";
+                                }
+                                
+                                // Show the corresponding tab content
+                                var tabId = this.id.replace("Tab", "");
+                                document.getElementById(tabId).style.display = "block";
+                            });
+                        }
+                    });
+                    
+                    // Add line numbers to code blocks
+                    function addLineNumbers() {
+                        var codeBlocks = document.querySelectorAll('pre code');
+                        codeBlocks.forEach(function(codeBlock) {
+                            var lines = codeBlock.innerHTML.split('\n');
+                            var numbered = lines.map(function(line, i) {
+                                return '<span class="hljs-line-numbers">' + (i + 1) + '</span>' + line;
+                            }).join('\n');
+                            codeBlock.innerHTML = numbered;
+                        });
+                    }
+                    
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize syntax highlighting
+                        hljs.highlightAll();
+                        // Add line numbers after highlighting
+                        addLineNumbers();
+                        
+                        // Process code blocks in prompts
+                        processPromptCodeBlocks();
+                    });
+                    
+                    // Function to process code blocks in prompts
+                    function processPromptCodeBlocks() {
+                        // Find all prompt pre elements
+                        const promptPres = document.querySelectorAll('.console-body pre');
+                        
+                        promptPres.forEach(function(pre) {
+                            try {
+                                // Use a safer string-based approach instead of regex
+                                let content = pre.innerHTML;
+                                let processed = content;
+                                
+                                // Find the start positions of all code blocks
+                                const codeBlockStarts = [];
+                                let searchPos = 0;
+                                let foundPos;
+                                
+                                while ((foundPos = content.indexOf("```", searchPos)) !== -1) {
+                                    codeBlockStarts.push(foundPos);
+                                    searchPos = foundPos + 3;
+                                }
+                                
+                                // Process code blocks in reverse order to avoid position shifts
+                                if (codeBlockStarts.length >= 2 && codeBlockStarts.length % 2 === 0) {
+                                    for (let i = codeBlockStarts.length - 2; i >= 0; i -= 2) {
+                                        const blockStart = codeBlockStarts[i];
+                                        const blockEnd = codeBlockStarts[i + 1];
+                                        
+                                        // Extract the entire block including markers
+                                        const fullBlock = content.substring(blockStart, blockEnd + 3);
+                                        
+                                        // Extract language (if any)
+                                        let lang = 'plaintext';
+                                        const firstLineEnd = fullBlock.indexOf('');
+                                        if (firstLineEnd > 3) { // There's content after the opening ```
+                                            lang = fullBlock.substring(3, firstLineEnd).trim() || 'plaintext';
+                                        }
+                                        
+                                        // Extract code content (between the markers)
+                                        const codeStart = fullBlock.indexOf('') + 1;
+                                        const codeEnd = fullBlock.lastIndexOf("```");
+                                        const code = fullBlock.substring(codeStart, codeEnd);
+                                        
+                                        // Create the replacement HTML
+                                        const replacement = `<div class="prompt-code-block" style="margin: 10px 0; border-radius: 4px; overflow: hidden;">
+                                          <div style="padding: 6px 10px; background-color: rgba(0,0,0,0.2); font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">${lang}</div>
+                                          <pre style="margin: 0; padding: 10px;"><code class="language-${lang}">${code}</code></pre>
+                                        </div>`;
+                                        
+                                        // Replace the code block with the HTML
+                                        processed = processed.replace(fullBlock, replacement);
+                                    }
+                                }
+                                
+                                if (content !== processed) {
+                                    pre.innerHTML = processed;
+                                    // Apply highlighting to the newly created code blocks
+                                    pre.querySelectorAll('code').forEach(function(block) {
+                                        hljs.highlightElement(block);
+                                    });
+                                }
+                            } catch (error) {
+                                console.log("Error processing code blocks:", error);
+                            }
+                        });
+                    }
+                </script>
+        
+                <script>
+                    var figure = {"data":[{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(25.0, 90.0%, 60.0%)"},"name":"Error: unbound module","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e3.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e6.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e7.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,1,0,1,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(27.5, 88.75%, 61.25%)"},"name":"Error: unbound module member","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e6.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e10.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,1,1,0,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(30.0, 87.5%, 62.5%)"},"name":"Error: unbound unscoped name","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound unscoped name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e6.9%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound unscoped name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e6.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound unscoped name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e25.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,1,3,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(32.5, 86.25%, 63.75%)"},"name":"Error: unexpected name in this position","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e6\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e46.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e33.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e53.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e70.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[6,7,4,7,7],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(35.0, 85.0%, 65.0%)"},"name":"Error: invalid use of reserved name","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE11003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid use of reserved name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e3.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE11003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE11003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE11003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE11003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(0.0, 90.0%, 60.0%)"},"name":"Non-blocking Error: ability constraint not satisfied","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e23.1%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,0,3,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(2.0, 89.0%, 61.0%)"},"name":"Non-blocking Error: invalid 'entry' function signature","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,1,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(4.0, 88.0%, 62.0%)"},"name":"Non-blocking Error: feature is deprecated in specified edition","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02013\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003efeature is deprecated in specified edition\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e3.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02013\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02013\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02013\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02013\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(6.0, 87.0%, 63.0%)"},"name":"Non-blocking Error: invalid modifier","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e10.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[3,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(8.0, 86.0%, 64.0%)"},"name":"Non-blocking Error: invalid 'init' function","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'init' function\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e17.2%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[5,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(10.0, 85.0%, 65.0%)"},"name":"Non-blocking Error: invalid object declaration","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid object declaration\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e3.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(40.0, 75.0%, 60.0%)"},"name":"Warning: unused variable","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e17.2%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[5,3,1,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(43.333333333333336, 73.33333333333333%, 61.666666666666664%)"},"name":"Warning: unused function","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW08009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused function\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e3.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW08009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW08009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW08009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW08009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(46.666666666666664, 71.66666666666667%, 63.333333333333336%)"},"name":"Warning: unused constant","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW11009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused constant\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e3.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW11009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW11009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW11009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW11009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(50.0, 70.0%, 65.0%)"},"name":"Warning: duplicate alias","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e6.9%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e13.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e16.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e15.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,2,2,2,2],"type":"bar"},{"hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e\u003cbr\u003eTotal Errors: \u003cb\u003e%{y}\u003c\u002fb\u003e\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#EF4444","dash":"solid","width":3},"marker":{"color":"#B91C1C","size":10,"symbol":"diamond"},"mode":"lines+markers","name":"Total Errors","x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[29,15,12,13,10],"type":"scatter"}],"layout":{"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"annotations":[{"bgcolor":"rgba(31, 41, 55, 0.8)","bordercolor":"rgba(75, 85, 99, 0.5)","borderpad":10,"borderwidth":2,"font":{"color":"rgba(255, 255, 255, 0.4)","family":"Arial, sans-serif","size":14},"opacity":0.9,"showarrow":false,"text":"Sui Move Compiler Error Analysis","x":0.5,"xanchor":"right","xref":"paper","y":1.05,"yanchor":"top","yref":"paper"},{"arrowcolor":"#22C55E","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#22C55E","size":12},"showarrow":true,"text":"-48.3%","x":1,"y":22.0},{"arrowcolor":"#22C55E","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#22C55E","size":12},"showarrow":true,"text":"-20.0%","x":2,"y":13.5},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"8.3%","x":3,"y":12.5},{"arrowcolor":"#22C55E","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#22C55E","size":12},"showarrow":true,"text":"-23.1%","x":4,"y":11.5},{"font":{"color":"#F9FAFB","size":14},"showarrow":false,"text":"29","x":0,"y":30},{"font":{"color":"#F9FAFB","size":14},"showarrow":false,"text":"15","x":1,"y":16},{"font":{"color":"#F9FAFB","size":14},"showarrow":false,"text":"12","x":2,"y":13},{"font":{"color":"#F9FAFB","size":14},"showarrow":false,"text":"13","x":3,"y":14},{"font":{"color":"#F9FAFB","size":14},"showarrow":false,"text":"10","x":4,"y":11}],"title":{"font":{"size":24,"family":"Arial, sans-serif","color":"#3B82F6"},"text":"Evolution of Compiler Errors Across Iterations","y":0.95,"x":0.5,"xanchor":"center","yanchor":"top"},"xaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#F9FAFB"},"text":"Iteration"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(255, 255, 255, 0.1)","tickangle":0},"yaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#F9FAFB"},"text":"Number of Errors"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(255, 255, 255, 0.1)"},"legend":{"title":{"font":{"size":14,"family":"Arial, sans-serif","color":"#F9FAFB"},"text":"Error Types"},"bgcolor":"rgba(255, 255, 255, 0.1)","bordercolor":"rgba(255, 255, 255, 0.2)","borderwidth":1,"orientation":"v","yanchor":"middle","y":0.5,"xanchor":"left","x":1.02},"margin":{"t":100,"b":100,"l":100,"r":100},"font":{"family":"Arial, sans-serif","color":"#F9FAFB"},"barmode":"stack","hovermode":"closest","height":800,"paper_bgcolor":"#111827","plot_bgcolor":"#111827"}};
+                    Plotly.newPlot('plotly-chart', figure.data, figure.layout, {
+                        displayModeBar: true,
+                        responsive: true,
+                        displaylogo: false,
+                        toImageButtonOptions: {
+                            format: 'png',
+                            filename: 'error_chart_dark',
+                            height: 800,
+                            width: 1200,
+                            scale: 2
+                        }
+                    });
+                </script>
+            </div>
+        </body>
+        </html>
+        

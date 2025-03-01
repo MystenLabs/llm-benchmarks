@@ -49,8 +49,9 @@ async function handler(request: NextRequest) {
     const requestPath = new URL(request.url).pathname;
     logger.info(`Processing reports list request`);
     
-    // Path to the outputs directory - relative to project root
-    const outputsDir = path.resolve(process.cwd(), '../test_outputs');
+    // Updated path to use public/test_outputs instead of looking one level up
+    const outputsDir = path.resolve(process.cwd(), 'public/test_outputs');
+    logger.info(`Outputs directory: ${outputsDir}`);
     
     // Check if the directory exists
     if (!await fs.pathExists(outputsDir)) {
@@ -96,15 +97,32 @@ async function handler(request: NextRequest) {
     const groupedReports: Record<string, ReportFile[]> = {};
     
     reports.forEach(report => {
-      // Extract the base name without timestamp or extension
-      // e.g., "nft_contract_20250226_214758_iterations_error_chart.html" -> "nft_contract"
-      const baseName = report.name.split('_').slice(0, -2).join('_');
-      
-      if (!groupedReports[baseName]) {
-        groupedReports[baseName] = [];
+      // Extract the timestamp from the filename (format: YYYYMMDD_HHMMSS)
+      const timestampMatch = report.name.match(/(\d{8}_\d{6})/);
+      if (!timestampMatch) {
+        // If no timestamp found, use the full filename as the group key
+        const baseNameWithoutExt = path.parse(report.name).name;
+        if (!groupedReports[baseNameWithoutExt]) {
+          groupedReports[baseNameWithoutExt] = [];
+        }
+        groupedReports[baseNameWithoutExt].push(report);
+        return;
       }
       
-      groupedReports[baseName].push(report);
+      const timestamp = timestampMatch[1];
+      
+      // Find the contract type part (everything before the timestamp)
+      const contractTypeMatch = report.name.match(/(.*?)_\d{8}_\d{6}/);
+      const contractType = contractTypeMatch ? contractTypeMatch[1] : 'unknown';
+      
+      // Use a combination of contract type and timestamp as the group key
+      const groupKey = `${contractType}_${timestamp}`;
+      
+      if (!groupedReports[groupKey]) {
+        groupedReports[groupKey] = [];
+      }
+      
+      groupedReports[groupKey].push(report);
     });
     
     const reportCount = Object.keys(groupedReports).length;

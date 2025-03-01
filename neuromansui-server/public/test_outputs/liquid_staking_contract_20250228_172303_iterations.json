@@ -1,0 +1,415 @@
+{
+  "version": "1.0",
+  "created_at": "2025-02-28T17:23:03.371624",
+  "description": "Sui Move compiler error prediction dataset",
+  "examples": [
+    {
+      "input": "module temp_addr::my_module {\n\n    use sui::coin::{Coin, destroy, value, new as coin_new};\n    use sui::tx_context::TxContext;\n\n    // Error codes\n    const E_NOT_UNLOCKED: u64 = 1;\n    const E_INVALID_VALIDATOR: u64 = 2;\n\n    // Resource representing the liquid staking token.\n    // Liquid tokens are minted on a 1:1 basis with staked SUI.\n    resource LiquidStakingToken {\n        supply: u64, // total liquid staking tokens minted\n    }\n\n    // Resource representing the staking pool that aggregates staked SUI.\n    resource StakingPool {\n        total_staked: u64,         // total SUI staked in the pool\n        total_liquid_tokens: u64,  // total liquid staking tokens issued\n    }\n\n    // Resource representing an individual user's stake position.\n    resource StakePosition {\n        owner: address,    // owner of the stake\n        amount: u64,       // amount of SUI staked\n        liquid_tokens: u64,// liquid tokens representing the stake position\n        rewards: u64,      // accrued rewards\n        unlock_time: u64,  // timestamp from which unstaking is allowed\n    }\n\n    // Admin resource for access management.\n    resource Admin {\n        owner: address,\n    }\n\n    // Initialize the staking pool.\n    // Only an admin should call this during deployment.\n    public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n        let pool = StakingPool {\n            total_staked: 0,\n            total_liquid_tokens: 0,\n        };\n        let token = LiquidStakingToken { supply: 0 };\n        let admin_cap = Admin { owner: admin };\n        (pool, token, admin_cap)\n    }\n\n    // Stake function: user stakes native SUI to participate in the liquid staking protocol.\n    // The function burns the provided coin and mints an equivalent amount of liquid tokens.\n    public fun stake(\n        sui: Coin<SUI>,                // the coin to stake (SUI)\n        lock_period: u64,              // unlock timestamp (absolute unix time)\n        pool: &mut StakingPool,        // mutable reference to the staking pool\n        token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n        owner: address,                // the staker's address\n        ctx: &mut TxContext            // transaction context for minting new coins\n    ): StakePosition {\n        let amount = value(&sui);\n        // Update pool state.\n        pool.total_staked = pool.total_staked + amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens + amount;\n        // Mint liquid tokens in a 1:1 ratio with staked SUI.\n        token.supply = token.supply + amount;\n\n        // Burn the provided SUI coin as it is now staked.\n        destroy(sui);\n\n        // Create the stake position resource.\n        StakePosition {\n            owner,\n            amount,\n            liquid_tokens: amount,\n            rewards: 0,\n            unlock_time: lock_period,\n        }\n    }\n\n    // Claim rewards function: user accrues rewards on their staked SUI.\n    // For this simulation, rewards are computed as 10% of the staked amount per claim.\n    public fun claim_rewards(\n        sp: &mut StakePosition\n    ): u64 {\n        let reward = sp.amount / 10;\n        sp.rewards = sp.rewards + reward;\n        reward\n    }\n\n    // Unstake function: allows users to withdraw their staked SUI (plus rewards)\n    // once the lock period has expired.\n    public fun unstake(\n        sp: StakePosition,             // the user's stake position resource\n        pool: &mut StakingPool,        // mutable reference to the staking pool\n        token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n        ctx: &mut TxContext,           // tx context for minting SUI coin\n        curr_time: u64                 // current timestamp (unix time)\n    ): Coin<SUI> {\n        // Ensure the stake is unlocked.\n        assert!(curr_time >= sp.unlock_time, E_NOT_UNLOCKED);\n        let total_return = sp.amount + sp.rewards;\n        // Update pool state by reducing the staked amount.\n        pool.total_staked = pool.total_staked - sp.amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens - sp.liquid_tokens;\n        token.supply = token.supply - sp.liquid_tokens;\n        // Mint and return a new SUI coin representing the unstaked amount plus rewards.\n        coin_new(total_return, ctx)\n    }\n\n    // Delegate to validator function: simulates delegation of stake to a validator.\n    // In production, this would involve interfacing with validator delegation mechanisms.\n    public fun delegate_to_validator(\n        sp: &mut StakePosition,\n        validator: address\n    ) {\n        // Check that the provided validator address is valid (non-zero).\n        assert!(validator != @0x0, E_INVALID_VALIDATOR);\n        // In a real implementation, add logic to interact with validator delegation services.\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:3:27\n  \u2502\n3 \u2502     use sui::coin::{Coin, destroy, value, new as coin_new};\n  \u2502                           ^^^^^^^ Invalid 'use'. Unbound member 'destroy' in module 'sui::coin'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/coin.move:7:13\n  \u2502\n7 \u2502 module sui::coin;\n  \u2502             ---- Module 'sui::coin' declared here\n\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:3:43\n  \u2502\n3 \u2502     use sui::coin::{Coin, destroy, value, new as coin_new};\n  \u2502                                           ^^^ Invalid 'use'. Unbound member 'new' in module 'sui::coin'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/coin.move:7:13\n  \u2502\n7 \u2502 module sui::coin;\n  \u2502             ---- Module 'sui::coin' declared here\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E01002]: unexpected token\n   \u250c\u2500 ./sources/temp_contract.move:12:5\n   \u2502\n12 \u2502     resource LiquidStakingToken {\n   \u2502     ^^^^^^^^\n   \u2502     \u2502\n   \u2502     Unexpected 'resource'\n   \u2502     Expected a module member: 'spec', 'use', 'friend', 'const', 'fun', 'struct', or 'enum'\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:38:42\n   \u2502\n38 \u2502     public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n   \u2502                                          ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:38:65\n   \u2502\n38 \u2502     public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n   \u2502                                                                 ^^^^^^^^^^^ Unbound type 'StakingPool' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:38:78\n   \u2502\n38 \u2502     public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n   \u2502                                                                              ^^^^^^^^^^^^^^^^^^ Unbound type 'LiquidStakingToken' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:38:98\n   \u2502\n38 \u2502     public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n   \u2502                                                                                                  ^^^^^ Unbound type 'Admin' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:39:20\n   \u2502\n39 \u2502         let pool = StakingPool {\n   \u2502                    ^^^^^^^^^^^ Unbound type 'StakingPool' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:43:21\n   \u2502\n43 \u2502         let token = LiquidStakingToken { supply: 0 };\n   \u2502                     ^^^^^^^^^^^^^^^^^^ Unbound type 'LiquidStakingToken' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:44:25\n   \u2502\n44 \u2502         let admin_cap = Admin { owner: admin };\n   \u2502                         ^^^^^ Unbound type 'Admin' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:51:19\n   \u2502\n51 \u2502         sui: Coin<SUI>,                // the coin to stake (SUI)\n   \u2502                   ^^^ Unbound type 'SUI' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:53:20\n   \u2502\n53 \u2502         pool: &mut StakingPool,        // mutable reference to the staking pool\n   \u2502                    ^^^^^^^^^^^ Unbound type 'StakingPool' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:54:21\n   \u2502\n54 \u2502         token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n   \u2502                     ^^^^^^^^^^^^^^^^^^ Unbound type 'LiquidStakingToken' in current scope\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:56:9\n   \u2502\n56 \u2502         ctx: &mut TxContext            // transaction context for minting new coins\n   \u2502         ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:57:8\n   \u2502\n57 \u2502     ): StakePosition {\n   \u2502        ^^^^^^^^^^^^^ Unbound type 'StakePosition' in current scope\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:66:9\n   \u2502\n66 \u2502         destroy(sui);\n   \u2502         ^^^^^^^ Unbound function 'destroy' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:69:9\n   \u2502\n69 \u2502         StakePosition {\n   \u2502         ^^^^^^^^^^^^^ Unbound type 'StakePosition' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:81:18\n   \u2502\n81 \u2502         sp: &mut StakePosition\n   \u2502                  ^^^^^^^^^^^^^ Unbound type 'StakePosition' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:91:13\n   \u2502\n91 \u2502         sp: StakePosition,             // the user's stake position resource\n   \u2502             ^^^^^^^^^^^^^ Unbound type 'StakePosition' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:92:20\n   \u2502\n92 \u2502         pool: &mut StakingPool,        // mutable reference to the staking pool\n   \u2502                    ^^^^^^^^^^^ Unbound type 'StakingPool' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:93:21\n   \u2502\n93 \u2502         token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n   \u2502                     ^^^^^^^^^^^^^^^^^^ Unbound type 'LiquidStakingToken' in current scope\n\nerror[E03004]: unbound type\n   \u250c\u2500 ./sources/temp_contract.move:96:13\n   \u2502\n96 \u2502     ): Coin<SUI> {\n   \u2502             ^^^ Unbound type 'SUI' in current scope\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:105:9\n    \u2502\n105 \u2502         coin_new(total_return, ctx)\n    \u2502         ^^^^^^^^ Unbound function 'coin_new' in current scope\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:111:9\n    \u2502\n111 \u2502         sp: &mut StakePosition,\n    \u2502         ^^ Unused parameter 'sp'. Consider removing or prefixing with an underscore: '_sp'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03004]: unbound type\n    \u250c\u2500 ./sources/temp_contract.move:111:18\n    \u2502\n111 \u2502         sp: &mut StakePosition,\n    \u2502                  ^^^^^^^^^^^^^ Unbound type 'StakePosition' in current scope\n\n",
+      "metadata": {
+        "iteration": 1,
+        "timestamp": 1740792066.75323,
+        "error_stats": {
+          "errors": 26,
+          "compiler_warnings": 4,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "E03003": {
+            "count": 2,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "W21002": {
+            "count": 1,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "N02001": {
+            "count": 1,
+            "message": "unexpected token",
+            "level": "NonblockingError"
+          },
+          "W02009": {
+            "count": 3,
+            "message": "unused variable",
+            "level": "Warning"
+          },
+          "E04003": {
+            "count": 17,
+            "message": "unbound type",
+            "level": "BlockingError"
+          },
+          "E05003": {
+            "count": 2,
+            "message": "unbound unscoped name",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import the transaction context.\n    use sui::tx_context::TxContext;\n\n    // Define a dummy coin type to represent native SUI.\n    // In a real Sui Move environment, the SUI coin is provided by the framework.\n    // Here we simulate it with our own resource.\n    struct SuiCoin has key {\n        value: u64,\n    }\n\n    // Helper function to get the value of a SuiCoin.\n    public fun coin_value(coin: &SuiCoin): u64 {\n        coin.value\n    }\n\n    // Helper function to \"destroy\" a coin.\n    // In Move, simply dropping the resource will destroy it.\n    fun destroy_coin(_coin: SuiCoin) {\n        // Resource is dropped and hence destroyed.\n    }\n\n    // Helper function to mint a new SuiCoin given an amount.\n    // Note: In a production Sui environment, minting coins is not arbitrary.\n    // This function is for simulation purposes only.\n    fun mint_coin(amount: u64, _ctx: &mut TxContext): SuiCoin {\n        SuiCoin { value: amount }\n    }\n\n    // Resource representing the liquid staking token.\n    // Liquid tokens are minted on a 1:1 basis with staked SUI.\n    struct LiquidStakingToken has key {\n        supply: u64, // total liquid staking tokens minted\n    }\n\n    // Resource representing the staking pool that aggregates staked SUI.\n    struct StakingPool has key {\n        total_staked: u64,         // total SUI staked in the pool\n        total_liquid_tokens: u64,  // total liquid staking tokens issued\n    }\n\n    // Resource representing an individual user's stake position.\n    struct StakePosition has key {\n        owner: address,    // owner of the stake\n        amount: u64,       // amount of SUI staked\n        liquid_tokens: u64,// liquid tokens representing the stake position\n        rewards: u64,      // accrued rewards\n        unlock_time: u64,  // timestamp from which unstaking is allowed\n    }\n\n    // Admin resource for access management.\n    struct Admin has key {\n        owner: address,\n    }\n\n    // Error codes for reverts.\n    const E_NOT_UNLOCKED: u64 = 1;\n    const E_INVALID_VALIDATOR: u64 = 2;\n\n    /////////////////////////////////////////////////////////////////////////\n    // Initialization function\n    /////////////////////////////////////////////////////////////////////////\n\n    // Initialize the staking pool.\n    // Only an admin should call this during deployment.\n    public fun init_pool(admin: address, _ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n        let pool = StakingPool {\n            total_staked: 0,\n            total_liquid_tokens: 0,\n        };\n        let token = LiquidStakingToken { supply: 0 };\n        let admin_cap = Admin { owner: admin };\n        (pool, token, admin_cap)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Staking mechanism\n    /////////////////////////////////////////////////////////////////////////\n\n    // Stake function: user stakes native SUI to participate in the liquid staking protocol.\n    // The function \"burns\" the provided coin and mints an equivalent amount of liquid tokens.\n    public fun stake(\n        sui: SuiCoin,                 // the coin to stake (native SUI)\n        lock_period: u64,             // unlock timestamp (absolute unix time)\n        pool: &mut StakingPool,       // mutable reference to the staking pool\n        token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n        owner: address,               // the staker's address\n        _ctx: &mut TxContext          // transaction context (unused in simulation)\n    ): StakePosition {\n        // Get the value from the provided SuiCoin.\n        let amount = coin_value(&sui);\n        // Update pool state.\n        pool.total_staked = pool.total_staked + amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens + amount;\n        // Mint liquid tokens in a 1:1 ratio with staked SUI.\n        token.supply = token.supply + amount;\n\n        // \"Burn\" the provided SuiCoin by destroying it.\n        destroy_coin(sui);\n\n        // Create and return the stake position resource.\n        StakePosition {\n            owner,\n            amount,\n            liquid_tokens: amount,\n            rewards: 0,\n            unlock_time: lock_period,\n        }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Rewards accrual and distribution\n    /////////////////////////////////////////////////////////////////////////\n\n    // Claim rewards function: user accrues rewards on their staked SUI.\n    // For this simulation, rewards are computed as 10% of the staked amount per claim.\n    public fun claim_rewards(\n        sp: &mut StakePosition // mutable reference to the user's stake position\n    ): u64 {\n        let reward = sp.amount / 10;\n        sp.rewards = sp.rewards + reward;\n        reward\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Unstaking mechanism\n    /////////////////////////////////////////////////////////////////////////\n\n    // Unstake function: allows users to withdraw their staked SUI (plus rewards)\n    // once the lock period has expired.\n    public fun unstake(\n        sp: StakePosition,             // the user's stake position resource\n        pool: &mut StakingPool,        // mutable reference to the staking pool\n        token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n        ctx: &mut TxContext,           // transaction context for minting SuiCoin\n        curr_time: u64                // current timestamp (unix time)\n    ): SuiCoin {\n        // Ensure the stake is unlocked.\n        assert!(curr_time >= sp.unlock_time, E_NOT_UNLOCKED);\n        let total_return = sp.amount + sp.rewards;\n        // Update pool state by reducing the staked amount.\n        pool.total_staked = pool.total_staked - sp.amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens - sp.liquid_tokens;\n        token.supply = token.supply - sp.liquid_tokens;\n        // Mint and return a new SuiCoin representing the unstaked amount plus rewards.\n        mint_coin(total_return, ctx)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Delegation mechanism\n    /////////////////////////////////////////////////////////////////////////\n\n    // Delegate to validator function: simulates delegation of stake to a validator.\n    // In production, this would involve interfacing with validator delegation mechanisms.\n    public fun delegate_to_validator(\n        _sp: &mut StakePosition, // mutable reference to the stake position (currently unused)\n        validator: address       // address of the validator to delegate to\n    ) {\n        // Check that the provided validator address is valid (non-zero).\n        assert!(validator != @0x0, E_INVALID_VALIDATOR);\n        // In a real implementation, add logic to interact with validator delegation services.\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E01003]: invalid modifier\n  \u250c\u2500 ./sources/temp_contract.move:9:5\n  \u2502\n9 \u2502     struct SuiCoin has key {\n  \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n  \u2502\n  = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:10:9\n   \u2502\n 9 \u2502     struct SuiCoin has key {\n   \u2502                        --- The 'key' ability is used to declare objects in Sui\n10 \u2502         value: u64,\n   \u2502         ^^^^^ Invalid object 'SuiCoin'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E06001]: unused value without 'drop'\n   \u250c\u2500 ./sources/temp_contract.move:20:38\n   \u2502  \n 9 \u2502       struct SuiCoin has key {\n   \u2502              ------- To satisfy the constraint, the 'drop' ability would need to be added here\n   \u00b7  \n20 \u2502       fun destroy_coin(_coin: SuiCoin) {\n   \u2502                        -----  ------- The type 'temp_addr::my_module::SuiCoin' does not have the ability 'drop'\n   \u2502                        \u2502       \n   \u2502                        The parameter '_coin' still contains a value. The value does not have the 'drop' ability and must be consumed before the function returns\n   \u2502 \u256d\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500^\n21 \u2502 \u2502         // Resource is dropped and hence destroyed.\n22 \u2502 \u2502     }\n   \u2502 \u2570\u2500\u2500\u2500\u2500\u2500^ Invalid return\n\nerror[Sui E01001]: invalid object construction\n   \u250c\u2500 ./sources/temp_contract.move:28:9\n   \u2502\n28 \u2502         SuiCoin { value: amount }\n   \u2502         ^^^^^^^^^^^^^^^^^^^^^^^^^\n   \u2502         \u2502         \u2502\n   \u2502         \u2502         The UID must come directly from sui::object::new. Or for tests, it can come from sui::test_scenario::new_object\n   \u2502         Invalid object creation without a newly created UID.\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:33:5\n   \u2502\n33 \u2502     struct LiquidStakingToken has key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:34:9\n   \u2502\n33 \u2502     struct LiquidStakingToken has key {\n   \u2502                                   --- The 'key' ability is used to declare objects in Sui\n34 \u2502         supply: u64, // total liquid staking tokens minted\n   \u2502         ^^^^^^ Invalid object 'LiquidStakingToken'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:38:5\n   \u2502\n38 \u2502     struct StakingPool has key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:39:9\n   \u2502\n38 \u2502     struct StakingPool has key {\n   \u2502                            --- The 'key' ability is used to declare objects in Sui\n39 \u2502         total_staked: u64,         // total SUI staked in the pool\n   \u2502         ^^^^^^^^^^^^ Invalid object 'StakingPool'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:44:5\n   \u2502\n44 \u2502     struct StakePosition has key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:45:9\n   \u2502\n44 \u2502     struct StakePosition has key {\n   \u2502                              --- The 'key' ability is used to declare objects in Sui\n45 \u2502         owner: address,    // owner of the stake\n   \u2502         ^^^^^ Invalid object 'StakePosition'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:53:5\n   \u2502\n53 \u2502     struct Admin has key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:54:9\n   \u2502\n53 \u2502     struct Admin has key {\n   \u2502                      --- The 'key' ability is used to declare objects in Sui\n54 \u2502         owner: address,\n   \u2502         ^^^^^ Invalid object 'Admin'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[Sui E01001]: invalid object construction\n   \u250c\u2500 ./sources/temp_contract.move:68:20\n   \u2502  \n68 \u2502           let pool = StakingPool {\n   \u2502 \u256d\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500^\n69 \u2502 \u2502             total_staked: 0,\n   \u2502 \u2502             ------------ The UID must come directly from sui::object::new. Or for tests, it can come from sui::test_scenario::new_object\n70 \u2502 \u2502             total_liquid_tokens: 0,\n71 \u2502 \u2502         };\n   \u2502 \u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500^ Invalid object creation without a newly created UID.\n\nerror[Sui E01001]: invalid object construction\n   \u250c\u2500 ./sources/temp_contract.move:72:21\n   \u2502\n72 \u2502         let token = LiquidStakingToken { supply: 0 };\n   \u2502                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   \u2502                     \u2502                    \u2502\n   \u2502                     \u2502                    The UID must come directly from sui::object::new. Or for tests, it can come from sui::test_scenario::new_object\n   \u2502                     Invalid object creation without a newly created UID.\n\nerror[Sui E01001]: invalid object construction\n   \u250c\u2500 ./sources/temp_contract.move:73:25\n   \u2502\n73 \u2502         let admin_cap = Admin { owner: admin };\n   \u2502                         ^^^^^^^^^^^^^^^^^^^^^^\n   \u2502                         \u2502       \u2502\n   \u2502                         \u2502       The UID must come directly from sui::object::new. Or for tests, it can come from sui::test_scenario::new_object\n   \u2502                         Invalid object creation without a newly created UID.\n\nerror[Sui E01001]: invalid object construction\n    \u250c\u2500 ./sources/temp_contract.move:103:9\n    \u2502  \n103 \u2502 \u256d         StakePosition {\n104 \u2502 \u2502             owner,\n    \u2502 \u2502             ----- The UID must come directly from sui::object::new. Or for tests, it can come from sui::test_scenario::new_object\n105 \u2502 \u2502             amount,\n106 \u2502 \u2502             liquid_tokens: amount,\n107 \u2502 \u2502             rewards: 0,\n108 \u2502 \u2502             unlock_time: lock_period,\n109 \u2502 \u2502         }\n    \u2502 \u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500^ Invalid object creation without a newly created UID.\n\nerror[E06001]: unused value without 'drop'\n    \u250c\u2500 ./sources/temp_contract.move:147:9\n    \u2502\n 44 \u2502     struct StakePosition has key {\n    \u2502            ------------- To satisfy the constraint, the 'drop' ability would need to be added here\n    \u00b7\n133 \u2502         sp: StakePosition,             // the user's stake position resource\n    \u2502         --  ------------- The type 'temp_addr::my_module::StakePosition' does not have the ability 'drop'\n    \u2502         \u2502    \n    \u2502         The parameter 'sp' still contains a value. The value does not have the 'drop' ability and must be consumed before the function returns\n    \u00b7\n147 \u2502         mint_coin(total_return, ctx)\n    \u2502         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid return\n\n",
+      "metadata": {
+        "iteration": 2,
+        "timestamp": 1740792099.290926,
+        "error_stats": {
+          "errors": 18,
+          "compiler_warnings": 1,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 1,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "N03001": {
+            "count": 5,
+            "message": "invalid modifier",
+            "level": "NonblockingError"
+          },
+          "N07002": {
+            "count": 5,
+            "message": "invalid object declaration",
+            "level": "NonblockingError"
+          },
+          "N01006": {
+            "count": 2,
+            "message": "unused value without 'drop'",
+            "level": "NonblockingError"
+          },
+          "N01001": {
+            "count": 5,
+            "message": "invalid object construction",
+            "level": "NonblockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Allow duplicate alias warning for TxContext.\n    #[allow(duplicate_alias)]\n    use sui::tx_context::TxContext;\n    use sui::object::{UID, new};\n\n    /////////////////////////////////////////////////////////////////////////\n    // Definition of resources with proper UID field for SUI objects.\n    /////////////////////////////////////////////////////////////////////////\n\n    // A SuiCoin resource representing native SUI.\n    // The first field is 'id' obtained from sui::object::new.\n    public struct SuiCoin has key, drop {\n        id: UID,\n        value: u64,\n    }\n\n    // Liquid staking token representing a staked position.\n    public struct LiquidStakingToken has key, drop {\n        id: UID,\n        supply: u64, // total liquid staking tokens minted\n    }\n\n    // The staking pool that aggregates staked SUI.\n    public struct StakingPool has key, drop {\n        id: UID,\n        total_staked: u64,         // total SUI staked in the pool\n        total_liquid_tokens: u64,  // total liquid staking tokens issued\n    }\n\n    // Represents an individual user's stake position.\n    public struct StakePosition has key, drop {\n        id: UID,\n        owner: address,    // owner of the stake\n        amount: u64,       // amount of SUI staked\n        liquid_tokens: u64,// liquid tokens representing the stake position\n        rewards: u64,      // accrued rewards\n        unlock_time: u64,  // timestamp from which unstaking is allowed\n    }\n\n    // Admin resource for access management.\n    public struct Admin has key, drop {\n        id: UID,\n        owner: address,\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Error codes for reverts.\n    /////////////////////////////////////////////////////////////////////////\n\n    const E_NOT_UNLOCKED: u64 = 1;\n    const E_INVALID_VALIDATOR: u64 = 2;\n\n    /////////////////////////////////////////////////////////////////////////\n    // Helper functions for SuiCoin\n    /////////////////////////////////////////////////////////////////////////\n\n    // Returns the value contained in a SuiCoin.\n    public fun coin_value(coin: &SuiCoin): u64 {\n        coin.value\n    }\n\n    // Consumes a SuiCoin. Pattern matching ensures the coin resource is consumed.\n    fun destroy_coin(coin: SuiCoin) {\n        let SuiCoin { id: _, value: _ } = coin;\n        // Coin is consumed/dropped.\n    }\n\n    // Mints a new SuiCoin with the given amount.\n    // The UID is created via sui::object::new.\n    fun mint_coin(amount: u64, ctx: &mut TxContext): SuiCoin {\n        SuiCoin { id: new(ctx), value: amount }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Initialization function\n    /////////////////////////////////////////////////////////////////////////\n\n    // Initializes the staking pool along with liquid token and admin capabilities.\n    // Only an admin should call this during deployment.\n    public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n        let pool = StakingPool {\n            id: new(ctx),\n            total_staked: 0,\n            total_liquid_tokens: 0,\n        };\n        let token = LiquidStakingToken { id: new(ctx), supply: 0 };\n        let admin_cap = Admin { id: new(ctx), owner: admin };\n        (pool, token, admin_cap)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Staking mechanism\n    /////////////////////////////////////////////////////////////////////////\n\n    // Stake function: user stakes native SUI to participate in the liquid staking protocol.\n    // The provided coin is consumed and an equivalent liquid token amount is minted.\n    public fun stake(\n        sui: SuiCoin,                  // the coin to stake (native SUI)\n        lock_period: u64,              // unlock timestamp (absolute unix time)\n        pool: &mut StakingPool,        // mutable reference to the staking pool\n        token: &mut LiquidStakingToken,// mutable reference to the liquid staking token resource\n        owner: address,                // the staker's address\n        _ctx: &mut TxContext           // transaction context (unused in simulation)\n    ): StakePosition {\n        let amount = coin_value(&sui);\n        // Update the staking pool state.\n        pool.total_staked = pool.total_staked + amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens + amount;\n        // Mint liquid tokens on a 1:1 basis with staked SUI.\n        token.supply = token.supply + amount;\n\n        // Consume the provided SuiCoin.\n        destroy_coin(sui);\n\n        // Create and return the stake position resource.\n        StakePosition {\n            id: new(_ctx),\n            owner,\n            amount,\n            liquid_tokens: amount,\n            rewards: 0,\n            unlock_time: lock_period,\n        }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Rewards accrual and distribution\n    /////////////////////////////////////////////////////////////////////////\n\n    // Claim rewards: for this simulation rewards are 10% of staked amount per claim.\n    public fun claim_rewards(\n        sp: &mut StakePosition // mutable reference to the user's stake position\n    ): u64 {\n        let reward = sp.amount / 10;\n        sp.rewards = sp.rewards + reward;\n        reward\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Unstaking mechanism\n    /////////////////////////////////////////////////////////////////////////\n\n    // Unstake function: allows users to withdraw their staked SUI along with rewards\n    // after the lock period has expired.\n    public fun unstake(\n        sp: StakePosition,              // the user's stake position resource\n        pool: &mut StakingPool,         // mutable reference to the staking pool\n        token: &mut LiquidStakingToken, // mutable reference to the liquid staking token resource\n        ctx: &mut TxContext,            // transaction context for minting SuiCoin\n        curr_time: u64                 // current timestamp (unix time)\n    ): SuiCoin {\n        // Ensure the stake is unlocked.\n        assert!(curr_time >= sp.unlock_time, E_NOT_UNLOCKED);\n        let total_return = sp.amount + sp.rewards;\n        // Update the pool state.\n        pool.total_staked = pool.total_staked - sp.amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens - sp.liquid_tokens;\n        token.supply = token.supply - sp.liquid_tokens;\n        // Return a new SuiCoin representing the unstaked SUI and rewards.\n        mint_coin(total_return, ctx)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Delegation mechanism\n    /////////////////////////////////////////////////////////////////////////\n\n    // Delegate to validator: simulates delegation of stake to a validator.\n    // In production, this would interact with actual validator delegation services.\n    public fun delegate_to_validator(\n        _sp: &mut StakePosition, // mutable reference to the stake position (currently unused)\n        validator: address       // the address of the validator to delegate to\n    ) {\n        // Ensure the validator address is valid (non-zero).\n        assert!(validator != @0x0, E_INVALID_VALIDATOR);\n        // In a real implementation, add logic to interface with validator delegation.\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nerror[E02015]: invalid attribute\n  \u250c\u2500 ./sources/temp_contract.move:4:7\n  \u2502\n4 \u2502     #[allow(duplicate_alias)]\n  \u2502       ^^^^^\n  \u2502       \u2502\n  \u2502       Known attribute 'allow' is not expected with a use\n  \u2502       Expected to be used with one of the following: module, constant, struct, enum, function\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:26\n  \u2502\n5 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:6:23\n  \u2502\n6 \u2502     use sui::object::{UID, new};\n  \u2502                       ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:15:13\n   \u2502\n15 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:21:13\n   \u2502\n21 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:27:13\n   \u2502\n27 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:34:13\n   \u2502\n34 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:44:13\n   \u2502\n44 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:66:27\n   \u2502\n15 \u2502         id: UID,\n   \u2502             --- The type 'sui::object::UID' does not have the ability 'drop'\n   \u00b7\n66 \u2502         let SuiCoin { id: _, value: _ } = coin;\n   \u2502                           ^ Cannot ignore values without the 'drop' ability. The value must be used\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\n",
+      "metadata": {
+        "iteration": 3,
+        "timestamp": 1740792124.210898,
+        "error_stats": {
+          "errors": 9,
+          "compiler_warnings": 2,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "N15002": {
+            "count": 1,
+            "message": "invalid attribute",
+            "level": "NonblockingError"
+          },
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "N01005": {
+            "count": 6,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import required modules.\n    use sui::tx_context::TxContext;\n    use sui::object::{new, UID};\n    use std::mem;\n\n    /////////////////////////////////////////////////////////////////////////\n    // Object definitions.\n    // Each Sui object must have UID as its first field.\n    /////////////////////////////////////////////////////////////////////////\n\n    // A SuiCoin resource representing native SUI.\n    public struct SuiCoin has key {\n        id: UID,\n        value: u64,\n    }\n\n    // Liquid staking token representing a staked position.\n    public struct LiquidStakingToken has key {\n        id: UID,\n        supply: u64, // total liquid staking tokens minted\n    }\n\n    // The staking pool that aggregates staked SUI.\n    public struct StakingPool has key {\n        id: UID,\n        total_staked: u64,        // total SUI staked in the pool\n        total_liquid_tokens: u64, // total liquid staking tokens issued\n    }\n\n    // Represents an individual user's stake position.\n    public struct StakePosition has key {\n        id: UID,\n        owner: address,     // owner of the stake\n        amount: u64,        // amount of SUI staked\n        liquid_tokens: u64, // liquid tokens representing the stake position\n        rewards: u64,       // accrued rewards\n        unlock_time: u64,   // timestamp from which unstaking is allowed\n    }\n\n    // Admin resource for access management.\n    public struct Admin has key {\n        id: UID,\n        owner: address,\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Error codes for aborts.\n    /////////////////////////////////////////////////////////////////////////\n\n    const E_NOT_UNLOCKED: u64 = 1;\n    const E_INVALID_VALIDATOR: u64 = 2;\n\n    /////////////////////////////////////////////////////////////////////////\n    // Helper functions for SuiCoin.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Returns the value contained in a SuiCoin.\n    public fun coin_value(coin: &SuiCoin): u64 {\n        coin.value\n    }\n\n    // Mints a new SuiCoin with the given amount.\n    // The UID is generated by sui::object::new.\n    fun mint_coin(amount: u64, ctx: &mut TxContext): SuiCoin {\n        SuiCoin { id: new(ctx), value: amount }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Initialization function.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Initialize the staking pool along with liquid token and admin capabilities.\n    // This function should be called by an admin during deployment.\n    public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n        let pool = StakingPool {\n            id: new(ctx),\n            total_staked: 0,\n            total_liquid_tokens: 0,\n        };\n        let token = LiquidStakingToken { id: new(ctx), supply: 0 };\n        let admin_cap = Admin { id: new(ctx), owner: admin };\n        (pool, token, admin_cap)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Staking mechanism.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Stake function: a user stakes native SUI to participate in the liquid staking protocol.\n    // The provided coin is consumed (burned) and an equivalent amount of liquid tokens is minted.\n    public fun stake(\n        sui: SuiCoin,                   // the coin to stake (native SUI)\n        lock_period: u64,               // unlock timestamp (absolute unix time)\n        pool: &mut StakingPool,         // mutable reference to the staking pool\n        token: &mut LiquidStakingToken, // mutable reference to the liquid staking token resource\n        owner: address,                 // the staker's address\n        _ctx: &mut TxContext            // transaction context (used for UID generation)\n    ): StakePosition {\n        let amount = coin_value(&sui);\n        // Update pool state.\n        pool.total_staked = pool.total_staked + amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens + amount;\n        // Mint liquid tokens on a 1:1 basis with staked SUI.\n        token.supply = token.supply + amount;\n        // Explicitly consume the coin to simulate burning.\n        mem::drop(sui);\n        // Create and return the stake position resource.\n        StakePosition {\n            id: new(_ctx),\n            owner,\n            amount,\n            liquid_tokens: amount,\n            rewards: 0,\n            unlock_time: lock_period,\n        }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Rewards accrual and distribution.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Claim rewards: for this simulation rewards are computed as 10% of the staked amount per claim.\n    public fun claim_rewards(\n        sp: &mut StakePosition // mutable reference to the user's stake position\n    ): u64 {\n        let reward = sp.amount / 10;\n        sp.rewards = sp.rewards + reward;\n        reward\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Unstaking mechanism.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Unstake function: allows users to withdraw their staked SUI along with rewards\n    // once the lock period has expired.\n    public fun unstake(\n        sp: StakePosition,              // the user's stake position resource\n        pool: &mut StakingPool,         // mutable reference to the staking pool\n        token: &mut LiquidStakingToken, // mutable reference to the liquid staking token resource\n        ctx: &mut TxContext,            // transaction context for minting SuiCoin\n        curr_time: u64                 // current timestamp (unix time)\n    ): SuiCoin {\n        // Ensure the stake is unlocked.\n        assert!(curr_time >= sp.unlock_time, E_NOT_UNLOCKED);\n        let total_return = sp.amount + sp.rewards;\n        // Update pool state.\n        pool.total_staked = pool.total_staked - sp.amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens - sp.liquid_tokens;\n        token.supply = token.supply - sp.liquid_tokens;\n        // Return a new SuiCoin representing the unstaked SUI and rewards.\n        mint_coin(total_return, ctx)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Delegation mechanism.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Delegate to validator: simulates delegation of stake to a validator.\n    // In production, this would interface with actual validator delegation services.\n    public fun delegate_to_validator(\n        _sp: &mut StakePosition, // mutable reference to the stake position (unused in this simulation)\n        validator: address       // address of the validator to delegate to\n    ) {\n        // Ensure the validator address is valid (non-zero).\n        assert!(validator != @0x0, E_INVALID_VALIDATOR);\n        // In a real implementation, add logic to interact with validator delegation services.\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:28\n  \u2502\n5 \u2502     use sui::object::{new, UID};\n  \u2502                            ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:6:9\n  \u2502\n6 \u2502     use std::mem;\n  \u2502         ^^^^^^^^ Invalid 'use'. Unbound module: 'std::mem'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:108:9\n    \u2502\n108 \u2502         mem::drop(sui);\n    \u2502         ^^^ Could not resolve the name 'mem'\n\n",
+      "metadata": {
+        "iteration": 4,
+        "timestamp": 1740792164.1879418,
+        "error_stats": {
+          "errors": 4,
+          "compiler_warnings": 2,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "E06003": {
+            "count": 1,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module temp_addr::my_module {\n\n    // Import required modules.\n    use sui::tx_context::TxContext;\n    use sui::object::{new, UID};\n\n    /////////////////////////////////////////////////////////////////////////\n    // Object definitions.\n    // Each Sui object must have UID as its first field.\n    /////////////////////////////////////////////////////////////////////////\n\n    // A SuiCoin resource representing native SUI.\n    public struct SuiCoin has key {\n        id: UID,\n        value: u64,\n    }\n\n    // Liquid staking token representing a staked position.\n    public struct LiquidStakingToken has key {\n        id: UID,\n        supply: u64, // total liquid staking tokens minted\n    }\n\n    // The staking pool that aggregates staked SUI.\n    public struct StakingPool has key {\n        id: UID,\n        total_staked: u64,        // total SUI staked in the pool\n        total_liquid_tokens: u64, // total liquid staking tokens issued\n    }\n\n    // Represents an individual user's stake position.\n    public struct StakePosition has key {\n        id: UID,\n        owner: address,     // owner of the stake\n        amount: u64,        // amount of SUI staked\n        liquid_tokens: u64, // liquid tokens representing the stake position\n        rewards: u64,       // accrued rewards\n        unlock_time: u64,   // timestamp from which unstaking is allowed\n    }\n\n    // Admin resource for access management.\n    public struct Admin has key {\n        id: UID,\n        owner: address,\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Error codes for aborts.\n    /////////////////////////////////////////////////////////////////////////\n\n    const E_NOT_UNLOCKED: u64 = 1;\n    const E_INVALID_VALIDATOR: u64 = 2;\n\n    /////////////////////////////////////////////////////////////////////////\n    // Helper functions for SuiCoin.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Returns the value contained in a SuiCoin.\n    public fun coin_value(coin: &SuiCoin): u64 {\n        coin.value\n    }\n\n    // Mints a new SuiCoin with the given amount.\n    // The UID is generated by sui::object::new.\n    fun mint_coin(amount: u64, ctx: &mut TxContext): SuiCoin {\n        SuiCoin { id: new(ctx), value: amount }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Initialization function.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Initialize the staking pool along with liquid token and admin capabilities.\n    // This function should be called by an admin during deployment.\n    public fun init_pool(admin: address, ctx: &mut TxContext): (StakingPool, LiquidStakingToken, Admin) {\n        let pool = StakingPool {\n            id: new(ctx),\n            total_staked: 0,\n            total_liquid_tokens: 0,\n        };\n        let token = LiquidStakingToken { id: new(ctx), supply: 0 };\n        let admin_cap = Admin { id: new(ctx), owner: admin };\n        (pool, token, admin_cap)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Staking mechanism.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Stake function: a user stakes native SUI to participate in the liquid staking protocol.\n    // The provided coin is consumed (burned) and an equivalent amount of liquid tokens is minted.\n    public fun stake(\n        sui: SuiCoin,                   // the coin to stake (native SUI)\n        lock_period: u64,               // unlock timestamp (absolute unix time)\n        pool: &mut StakingPool,         // mutable reference to the staking pool\n        token: &mut LiquidStakingToken, // mutable reference to the liquid staking token resource\n        owner: address,                 // the staker's address\n        _ctx: &mut TxContext            // transaction context (used for UID generation)\n    ): StakePosition {\n        let amount = coin_value(&sui);\n        // Update pool state.\n        pool.total_staked = pool.total_staked + amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens + amount;\n        // Mint liquid tokens on a 1:1 basis with staked SUI.\n        token.supply = token.supply + amount;\n        // Consume the SuiCoin by pattern matching; this burns the coin.\n        let SuiCoin { id: _, value: _ } = sui;\n        // Create and return the stake position resource.\n        StakePosition {\n            id: new(_ctx),\n            owner,\n            amount,\n            liquid_tokens: amount,\n            rewards: 0,\n            unlock_time: lock_period,\n        }\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Rewards accrual and distribution.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Claim rewards: for this simulation rewards are computed as 10% of the staked amount per claim.\n    public fun claim_rewards(\n        sp: &mut StakePosition // mutable reference to the user's stake position\n    ): u64 {\n        let reward = sp.amount / 10;\n        sp.rewards = sp.rewards + reward;\n        reward\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Unstaking mechanism.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Unstake function: allows users to withdraw their staked SUI along with rewards\n    // once the lock period has expired.\n    public fun unstake(\n        sp: StakePosition,              // the user's stake position resource\n        pool: &mut StakingPool,         // mutable reference to the staking pool\n        token: &mut LiquidStakingToken, // mutable reference to the liquid staking token resource\n        ctx: &mut TxContext,            // transaction context for minting SuiCoin\n        curr_time: u64                 // current timestamp (unix time)\n    ): SuiCoin {\n        // Ensure the stake is unlocked.\n        assert!(curr_time >= sp.unlock_time, E_NOT_UNLOCKED);\n        let total_return = sp.amount + sp.rewards;\n        // Update pool state.\n        pool.total_staked = pool.total_staked - sp.amount;\n        pool.total_liquid_tokens = pool.total_liquid_tokens - sp.liquid_tokens;\n        token.supply = token.supply - sp.liquid_tokens;\n        // Return a new SuiCoin representing the unstaked SUI and rewards.\n        mint_coin(total_return, ctx)\n    }\n\n    /////////////////////////////////////////////////////////////////////////\n    // Delegation mechanism.\n    /////////////////////////////////////////////////////////////////////////\n\n    // Delegate to validator: simulates delegation of stake to a validator.\n    // In production, this would interface with actual validator delegation services.\n    public fun delegate_to_validator(\n        _sp: &mut StakePosition, // mutable reference to the stake position (unused in this simulation)\n        validator: address       // address of the validator to delegate to\n    ) {\n        // Ensure the validator address is valid (non-zero).\n        assert!(validator != @0x0, E_INVALID_VALIDATOR);\n        // In a real implementation, add logic to interact with validator delegation services.\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:26\n  \u2502\n4 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:28\n  \u2502\n5 \u2502     use sui::object::{new, UID};\n  \u2502                            ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E05001]: ability constraint not satisfied\n    \u250c\u2500 ./sources/temp_contract.move:107:27\n    \u2502\n 14 \u2502         id: UID,\n    \u2502             --- The type 'sui::object::UID' does not have the ability 'drop'\n    \u00b7\n107 \u2502         let SuiCoin { id: _, value: _ } = sui;\n    \u2502                           ^ Cannot ignore values without the 'drop' ability. The value must be used\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E06001]: unused value without 'drop'\n    \u250c\u2500 ./sources/temp_contract.move:153:9\n    \u2502\n 32 \u2502     public struct StakePosition has key {\n    \u2502                   ------------- To satisfy the constraint, the 'drop' ability would need to be added here\n    \u00b7\n139 \u2502         sp: StakePosition,              // the user's stake position resource\n    \u2502         --  ------------- The type 'temp_addr::my_module::StakePosition' does not have the ability 'drop'\n    \u2502         \u2502    \n    \u2502         The parameter 'sp' still contains a value. The value does not have the 'drop' ability and must be consumed before the function returns\n    \u00b7\n153 \u2502         mint_coin(total_return, ctx)\n    \u2502         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid return\n\n",
+      "metadata": {
+        "iteration": 5,
+        "timestamp": 1740792182.327639,
+        "error_stats": {
+          "errors": 4,
+          "compiler_warnings": 2,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "N01005": {
+            "count": 1,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          },
+          "N01006": {
+            "count": 1,
+            "message": "unused value without 'drop'",
+            "level": "NonblockingError"
+          }
+        }
+      }
+    }
+  ],
+  "error_histogram": {
+    "E03003": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "W21002": [
+      1,
+      1,
+      2,
+      2,
+      2
+    ],
+    "N02001": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "W02009": [
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    "E04003": [
+      17,
+      0,
+      0,
+      0,
+      0
+    ],
+    "E05003": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "N03001": [
+      0,
+      5,
+      0,
+      0,
+      0
+    ],
+    "N07002": [
+      0,
+      5,
+      0,
+      0,
+      0
+    ],
+    "N01006": [
+      0,
+      2,
+      0,
+      0,
+      1
+    ],
+    "N01001": [
+      0,
+      5,
+      0,
+      0,
+      0
+    ],
+    "N15002": [
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "N01005": [
+      0,
+      0,
+      6,
+      0,
+      1
+    ],
+    "E02003": [
+      0,
+      0,
+      0,
+      1,
+      0
+    ],
+    "E06003": [
+      0,
+      0,
+      0,
+      1,
+      0
+    ]
+  },
+  "iterations_data": [
+    {
+      "iteration": 1,
+      "total_errors": 26,
+      "error_breakdown": {
+        "E03003": {
+          "count": 2,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "W21002": {
+          "count": 1,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "N02001": {
+          "count": 1,
+          "message": "unexpected token",
+          "level": "NonblockingError"
+        },
+        "W02009": {
+          "count": 3,
+          "message": "unused variable",
+          "level": "Warning"
+        },
+        "E04003": {
+          "count": 17,
+          "message": "unbound type",
+          "level": "BlockingError"
+        },
+        "E05003": {
+          "count": 2,
+          "message": "unbound unscoped name",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "total_errors": 18,
+      "error_breakdown": {
+        "W21002": {
+          "count": 1,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "N03001": {
+          "count": 5,
+          "message": "invalid modifier",
+          "level": "NonblockingError"
+        },
+        "N07002": {
+          "count": 5,
+          "message": "invalid object declaration",
+          "level": "NonblockingError"
+        },
+        "N01006": {
+          "count": 2,
+          "message": "unused value without 'drop'",
+          "level": "NonblockingError"
+        },
+        "N01001": {
+          "count": 5,
+          "message": "invalid object construction",
+          "level": "NonblockingError"
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "total_errors": 9,
+      "error_breakdown": {
+        "N15002": {
+          "count": 1,
+          "message": "invalid attribute",
+          "level": "NonblockingError"
+        },
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "N01005": {
+          "count": 6,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "total_errors": 4,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "E06003": {
+          "count": 1,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "total_errors": 4,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "N01005": {
+          "count": 1,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        },
+        "N01006": {
+          "count": 1,
+          "message": "unused value without 'drop'",
+          "level": "NonblockingError"
+        }
+      }
+    }
+  ],
+  "total_iterations": 5
+}

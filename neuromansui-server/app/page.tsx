@@ -49,7 +49,42 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-6 md:p-12">
-      <h1 className="text-4xl font-bold mb-8">Neuromansui Report Server</h1>
+      <h1 className="text-4xl font-bold mb-4">Neuromansui Report Server</h1>
+      
+      <div className="w-full max-w-4xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-8 shadow-sm">
+        <h2 className="text-xl font-semibold mb-3 text-blue-800">About Neuromansui</h2>
+        <p className="mb-3 text-gray-700">
+          Neuromansui is an AI-powered "IDE Simulator" for developing and refining Sui Move smart contracts. It uses large language models (LLMs) to iteratively generate, compile, and improve contract code, mimicking real debugging cycles and measuring how well AI can reason about Move's unique semantics.
+        </p>
+        <p className="mb-3 text-gray-700">
+          By tracking error patterns across multiple refinement iterations, we gain insights beyond a simple "does it compile?" assessment. This helps identify recurring challenges with resource ownership, abilities, generics, and other Move-specific concepts that trip up both AI models and human developers.
+        </p>
+        <p className="mb-3 text-gray-700">
+          Each report visualizes a model's progression through debugging cycles, from initial one-shot attempts (often with Solidity-influenced antipatterns) through multiple refinement stages, revealing how well the model truly "understands" Move fundamentals.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-4">
+          <div className="bg-blue-100 px-4 py-2 rounded-md flex-1">
+            <h3 className="font-medium text-blue-800 mb-1">Key Features</h3>
+            <ul className="list-disc list-inside text-sm text-gray-700">
+              <li>Error evolution visualization across iterations</li>
+              <li>Multi-iteration debugging and refinement cycles</li>
+              <li>Error type analysis and frequency tracking</li>
+              <li>Contract code viewing and comparison</li>
+              <li>Model performance metrics over time</li>
+            </ul>
+          </div>
+          <div className="bg-indigo-100 px-4 py-2 rounded-md flex-1">
+            <h3 className="font-medium text-indigo-800 mb-1">Project Goals</h3>
+            <ul className="list-disc list-inside text-sm text-gray-700">
+              <li>Identify common errors in LLM-generated Move code</li>
+              <li>Improve documentation and developer experience</li>
+              <li>Track AI progress in understanding Move semantics</li>
+              <li>Develop better prompting strategies for Move code</li>
+              <li>Benchmark different models (o3, Claude, GPT-4, etc.)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
       
       {loading ? (
         <div className="flex items-center justify-center w-full py-12">
@@ -75,9 +110,40 @@ export default function Home() {
             const moveFile = files.find(file => file.type === 'move');
             const jsonFiles = files.filter(file => file.type === 'json');
             
+            // Create a more friendly report title
+            const timestampMatch = reportName.match(/(\d{8}_\d{6})/);
+            const timestamp = timestampMatch ? timestampMatch[1] : '';
+            
+            // Format the timestamp for display
+            let formattedDate = '';
+            if (timestamp) {
+              const year = timestamp.substring(0, 4);
+              const month = timestamp.substring(4, 6);
+              const day = timestamp.substring(6, 8);
+              const hour = timestamp.substring(9, 11);
+              const minute = timestamp.substring(11, 13);
+              formattedDate = `${year}-${month}-${day} ${hour}:${minute}`;
+            }
+            
+            // Extract contract type from the report name (everything before timestamp)
+            let contractType = reportName;
+            if (timestamp) {
+              const contractTypeMatch = reportName.match(/(.*?)_\d{8}_\d{6}/);
+              contractType = contractTypeMatch ? contractTypeMatch[1].replace(/_/g, ' ') : reportName;
+              // Capitalize first letter of each word
+              contractType = contractType
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+            }
+            
+            const displayTitle = timestamp 
+              ? `${contractType} (${formattedDate})`
+              : reportName;
+            
             return (
               <div key={reportName} className="mb-8 bg-white shadow-md rounded-lg p-6">
-                <h2 className="text-2xl font-semibold mb-4">{reportName}</h2>
+                <h2 className="text-2xl font-semibold mb-4">{displayTitle}</h2>
                 
                 {chartFile && (
                   <div className="mb-4">

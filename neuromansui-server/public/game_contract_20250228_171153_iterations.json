@@ -1,0 +1,636 @@
+{
+  "version": "1.0",
+  "created_at": "2025-02-28T17:11:53.927355",
+  "description": "Sui Move compiler error prediction dataset",
+  "examples": [
+    {
+      "input": "module 0x0::my_module {\n\n    use std::vector;\n    use std::string;\n    use std::signer;\n    use std::error;\n    // Error codes\n    const ENOT_CHARACTER_OWNER: u64 = 1;\n    const EINSUFFICIENT_CURRENCY: u64 = 2;\n    const EINVALID_ITEM_INDEX: u64 = 3;\n    const EPARTICIPANT_SELF: u64 = 4;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ENUMERATIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Define rarities for in-game items.\n    public enum Rarity {\n        COMMON,\n        RARE,\n        EPIC,\n        LEGENDARY\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // RESOURCE DEFINITIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Resource representing a game item. Each item has a rarity and an effect description.\n    struct GameItem has store, key {\n        rarity: Rarity,\n        effect: string::String,\n    }\n\n    // Resource representing a player\u2019s character in the game.\n    struct Character has store, key {\n        owner: address,                   // Owner of the character.\n        strength: u64,                    // Physical power.\n        agility: u64,                     // Speed and evasiveness.\n        intelligence: u64,                // Magical or analytical abilities.\n        level: u64,                       // Current level.\n        experience: u64,                  // Current experience points.\n        achievements: vector<string::String>, // List of achievement descriptions.\n        inventory: vector<GameItem>,      // Items owned by the character.\n        currency: u64                     // In-game currency balance.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // HELPER FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Simple linear congruential generator (LCG) for pseudo-random number generation.\n    // Note: This is not cryptographically secure. In practice, use a verifiable random function.\n    fun secure_random(seed: u64) : u64 {\n        // Constants for LCG (example values)\n        let a = 6364136223846793005;\n        let c = 1;\n        (seed * a + c)\n    }\n\n    // Generate a random number in range [0, max)\n    fun random_in_range(seed: u64, max: u64): u64 {\n        let rnd = secure_random(seed);\n        rnd % max\n    }\n\n    // Internal function to check if the caller is the owner of the character.\n    fun assert_character_owner(ch: &Character, sender: address) {\n        if (ch.owner != sender) {\n            abort ENOT_CHARACTER_OWNER;\n        }\n    }\n\n    // Level up the character if enough experience has been accumulated.\n    fun try_level_up(ch: &mut Character) {\n        // Level up threshold: level * 100.\n        while (ch.experience >= ch.level * 100) {\n            ch.experience = ch.experience - ch.level * 100;\n            ch.level = ch.level + 1;\n            // Increase character attributes on level up.\n            ch.strength = ch.strength + 2;\n            ch.agility = ch.agility + 2;\n            ch.intelligence = ch.intelligence + 2;\n            let achievement_msg = string::concat(\n                \"Leveled up to level \",\n                string::utf8(ch.level)\n            );\n            vector::push_back(&mut ch.achievements, achievement_msg);\n        }\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // PUBLIC ENTRY FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Create a new character for the calling user.\n    // The attributes are pseudo-randomly generated using the provided seed.\n    public entry fun create_character(sender: &signer, seed: u64): Character {\n        let addr = signer::address_of(sender);\n        // Base attributes between 10 and 20.\n        let strength = 10 + random_in_range(seed, 11); // 10..20\n        let agility = 10 + random_in_range(seed + 1, 11);\n        let intelligence = 10 + random_in_range(seed + 2, 11);\n        Character {\n            owner: addr,\n            strength,\n            agility,\n            intelligence,\n            level: 1,\n            experience: 0,\n            achievements: vector::empty<string::String>(),\n            inventory: vector::empty<GameItem>(),\n            currency: 100  // Starting currency.\n        }\n    }\n\n    // Create a new game item. The item is assigned to the owner's inventory.\n    public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): GameItem {\n        GameItem {\n            rarity,\n            effect,\n        }\n    }\n\n    // Add an item to the sender's character inventory.\n    // This function assumes the sender already has an existing character.\n    public entry fun add_item_to_character(sender: &signer, ch: &mut Character, item: GameItem) {\n        // Verify the caller is the owner.\n        let addr = signer::address_of(sender);\n        assert_character_owner(ch, addr);\n        vector::push_back(&mut ch.inventory, item);\n    }\n\n    // Function to simulate combat between two characters.\n    // The attacker and defender must be different characters.\n    // The outcome is decided based on character attributes and random chance.\n    // The provided seed is combined with character attributes for randomness.\n    // On victory, the attacker gains experience and currency rewards.\n    public entry fun combat(\n        sender: &signer,\n        attacker: &mut Character,\n        defender: &mut Character,\n        seed: u64\n    ): bool {\n        let caller = signer::address_of(sender);\n        // Only the owner of the attacker can initiate combat.\n        assert_character_owner(attacker, caller);\n        // Prevent a character from attacking itself.\n        if (attacker.owner == defender.owner) {\n            abort EPARTICIPANT_SELF;\n        }\n        // Calculate attack power: based on strength and a random bonus.\n        let attack_bonus = random_in_range(seed, attacker.strength + 1);\n        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;\n\n        // Calculate defense power: based on agility and a random bonus.\n        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);\n        let defense_power = defender.agility + defense_bonus + defender.level * 2;\n\n        // Determine damage as the difference, if any.\n        if (attack_power > defense_power) {\n            // Attacker wins; compute experience gain.\n            let exp_gain = (attack_power - defense_power) + 10;\n            attacker.experience = attacker.experience + exp_gain;\n\n            // Reward currency: percentage of defender's currency.\n            let reward = defender.currency / 10; // 10% reward\n            if (defender.currency >= reward) {\n                defender.currency = defender.currency - reward;\n                attacker.currency = attacker.currency + reward;\n            }\n            // Add achievement for winning combat.\n            let win_message = string::concat(\"Victory! Gained \", string::utf8(exp_gain));\n            vector::push_back(&mut attacker.achievements, win_message);\n\n            // Attempt level up if threshold reached.\n            try_level_up(attacker);\n            true\n        } else {\n            // Defender wins; attacker loses some currency as penalty.\n            if (attacker.currency >= 5) {\n                attacker.currency = attacker.currency - 5;\n                defender.currency = defender.currency + 5;\n            }\n            // Add achievement for a close defeat.\n            let loss_message = string::concat(\"Defeat in combat. Attacker power: \", \n                                string::utf8(attack_power));\n            vector::push_back(&mut attacker.achievements, loss_message);\n            false\n        }\n    }\n\n    // Trade an item from one character to another.\n    // The function ensures that the sender is the owner of the source character.\n    public entry fun trade_item(\n        sender: &signer,\n        from: &mut Character,\n        to: &mut Character,\n        item_index: u64\n    ) {\n        let caller = signer::address_of(sender);\n        // Verify sender owns the 'from' character.\n        assert_character_owner(from, caller);\n        let len = vector::length(&from.inventory);\n        if (item_index >= len) {\n            abort EINVALID_ITEM_INDEX;\n        };\n        // Remove the item from the sender's inventory.\n        let item = vector::remove(&mut from.inventory, item_index as usize);\n        // Add the item to the recipient's inventory.\n        vector::push_back(&mut to.inventory, item);\n    }\n\n    // Exchange in-game currency between two characters.\n    // The sender's character must have sufficient funds.\n    public entry fun exchange_currency(\n        sender: &signer,\n        from: &mut Character,\n        to: &mut Character,\n        amount: u64\n    ) {\n        let caller = signer::address_of(sender);\n        // Verify sender owns the 'from' character.\n        assert_character_owner(from, caller);\n        if (from.currency < amount) {\n            abort EINSUFFICIENT_CURRENCY;\n        };\n        from.currency = from.currency - amount;\n        to.currency = to.currency + amount;\n    }\n\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:3:14\n  \u2502\n3 \u2502     use std::vector;\n  \u2502              ^^^^^^ Unnecessary alias 'vector' for module 'std::vector'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:5:9\n  \u2502\n5 \u2502     use std::signer;\n  \u2502         ^^^^^^^^^^^ Invalid 'use'. Unbound module: 'std::signer'\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:6:9\n  \u2502\n6 \u2502     use std::error;\n  \u2502         ^^^^^^^^^^ Invalid 'use'. Unbound module: 'std::error'\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:30:5\n   \u2502\n30 \u2502     struct GameItem has store, key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:31:9\n   \u2502\n30 \u2502     struct GameItem has store, key {\n   \u2502                                --- The 'key' ability is used to declare objects in Sui\n31 \u2502         rarity: Rarity,\n   \u2502         ^^^^^^ Invalid object 'GameItem'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:31:17\n   \u2502\n18 \u2502     public enum Rarity {\n   \u2502                 ------ To satisfy the constraint, the 'store' ability would need to be added here\n   \u00b7\n31 \u2502         rarity: Rarity,\n   \u2502                 ^^^^^^\n   \u2502                 \u2502\n   \u2502                 Invalid field type. The struct was declared with the ability 'key' so all fields require the ability 'store'\n   \u2502                 The type '0x0::my_module::Rarity' does not have the ability 'store'\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:31:17\n   \u2502\n18 \u2502     public enum Rarity {\n   \u2502                 ------ To satisfy the constraint, the 'store' ability would need to be added here\n   \u00b7\n31 \u2502         rarity: Rarity,\n   \u2502                 ^^^^^^\n   \u2502                 \u2502\n   \u2502                 Invalid field type. The struct was declared with the ability 'store' so all fields require the ability 'store'\n   \u2502                 The type '0x0::my_module::Rarity' does not have the ability 'store'\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:36:5\n   \u2502\n36 \u2502     struct Character has store, key {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:37:9\n   \u2502\n36 \u2502     struct Character has store, key {\n   \u2502                                 --- The 'key' ability is used to declare objects in Sui\n37 \u2502         owner: address,                   // Owner of the character.\n   \u2502         ^^^^^ Invalid object 'Character'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E03003]: unbound module member\n   \u250c\u2500 ./sources/temp_contract.move:84:35\n   \u2502\n84 \u2502             let achievement_msg = string::concat(\n   \u2502                                   ^^^^^^^^^^^^^^ Invalid module access. Unbound function 'concat' in module 'std::string'\n\nerror[E01001]: invalid character\n   \u250c\u2500 ./sources/temp_contract.move:85:17\n   \u2502\n85 \u2502                 \"Leveled up to level \",\n   \u2502                 ^ Unexpected character: '\"'\n\nerror[E01001]: invalid character\n   \u250c\u2500 ./sources/temp_contract.move:85:38\n   \u2502\n85 \u2502                 \"Leveled up to level \",\n   \u2502                                      ^ Unexpected character: '\"'\n\nerror[Sui E02002]: invalid 'entry' function signature\n   \u250c\u2500 ./sources/temp_contract.move:98:12\n   \u2502\n36 \u2502     struct Character has store, key {\n   \u2502            --------- To satisfy the constraint, the 'drop' ability would need to be added here\n   \u00b7\n98 \u2502     public entry fun create_character(sender: &signer, seed: u64): Character {\n   \u2502            ^^^^^                                                   --------- The type '0x0::my_module::Character' does not have the ability 'drop'\n   \u2502            \u2502                                                        \n   \u2502            Invalid return type for entry function 'create_character'\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:98:39\n   \u2502\n98 \u2502     public entry fun create_character(sender: &signer, seed: u64): Character {\n   \u2502                                       ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:99:20\n   \u2502\n99 \u2502         let addr = signer::address_of(sender);\n   \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:118:12\n    \u2502\n 30 \u2502     struct GameItem has store, key {\n    \u2502            -------- To satisfy the constraint, the 'drop' ability would need to be added here\n    \u00b7\n118 \u2502     public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            ^^^^^                                                                           -------- The type '0x0::my_module::GameItem' does not have the ability 'drop'\n    \u2502            \u2502                                                                                \n    \u2502            Invalid return type for entry function 'create_item'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:118:34\n    \u2502\n118 \u2502     public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): GameItem {\n    \u2502                                  ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:118:51\n    \u2502\n118 \u2502     public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            -----                                  ^^^^^^  ------ 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                                      \u2502        \n    \u2502            \u2502                                      Invalid 'entry' parameter type for parameter 'rarity'\n    \u2502            'create_item' was declared 'entry' here\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:127:44\n    \u2502\n127 \u2502     public entry fun add_item_to_character(sender: &signer, ch: &mut Character, item: GameItem) {\n    \u2502                                            ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:129:20\n    \u2502\n129 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:140:9\n    \u2502\n140 \u2502         sender: &signer,\n    \u2502         ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:145:22\n    \u2502\n145 \u2502         let caller = signer::address_of(sender);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:153:9\n    \u2502\n153 \u2502         let attack_bonus = random_in_range(seed, attacker.strength + 1);\n    \u2502         ^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'let'\n    \u2502         Expected ';'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:173:13\n    \u2502\n173 \u2502             let win_message = string::concat(\"Victory! Gained \", string::utf8(exp_gain));\n    \u2502             ^^^\n    \u2502             \u2502\n    \u2502             Unexpected 'let'\n    \u2502             Expected ';'\n\nerror[E03003]: unbound module member\n    \u250c\u2500 ./sources/temp_contract.move:173:31\n    \u2502\n173 \u2502             let win_message = string::concat(\"Victory! Gained \", string::utf8(exp_gain));\n    \u2502                               ^^^^^^^^^^^^^^ Invalid module access. Unbound function 'concat' in module 'std::string'\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:173:46\n    \u2502\n173 \u2502             let win_message = string::concat(\"Victory! Gained \", string::utf8(exp_gain));\n    \u2502                                              ^ Unexpected character: '\"'\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:173:63\n    \u2502\n173 \u2502             let win_message = string::concat(\"Victory! Gained \", string::utf8(exp_gain));\n    \u2502                                                               ^ Unexpected character: '\"'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:186:13\n    \u2502\n186 \u2502             let loss_message = string::concat(\"Defeat in combat. Attacker power: \", \n    \u2502             ^^^\n    \u2502             \u2502\n    \u2502             Unexpected 'let'\n    \u2502             Expected ';'\n\nerror[E03003]: unbound module member\n    \u250c\u2500 ./sources/temp_contract.move:186:32\n    \u2502\n186 \u2502             let loss_message = string::concat(\"Defeat in combat. Attacker power: \", \n    \u2502                                ^^^^^^^^^^^^^^ Invalid module access. Unbound function 'concat' in module 'std::string'\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:186:47\n    \u2502\n186 \u2502             let loss_message = string::concat(\"Defeat in combat. Attacker power: \", \n    \u2502                                               ^ Unexpected character: '\"'\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:186:82\n    \u2502\n186 \u2502             let loss_message = string::concat(\"Defeat in combat. Attacker power: \", \n    \u2502                                                                                  ^ Unexpected character: '\"'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:196:9\n    \u2502\n196 \u2502         sender: &signer,\n    \u2502         ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:201:22\n    \u2502\n201 \u2502         let caller = signer::address_of(sender);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03004]: unbound type\n    \u250c\u2500 ./sources/temp_contract.move:209:70\n    \u2502\n209 \u2502         let item = vector::remove(&mut from.inventory, item_index as usize);\n    \u2502                                                                      ^^^^^ Unbound type 'usize' in current scope\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:217:9\n    \u2502\n217 \u2502         sender: &signer,\n    \u2502         ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:222:22\n    \u2502\n222 \u2502         let caller = signer::address_of(sender);\n    \u2502                      ^^^^^^ Could not resolve the name 'signer'\n\n",
+      "metadata": {
+        "iteration": 1,
+        "timestamp": 1740790762.572159,
+        "error_stats": {
+          "errors": 36,
+          "compiler_warnings": 7,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 1,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 2,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "N03001": {
+            "count": 2,
+            "message": "invalid modifier",
+            "level": "NonblockingError"
+          },
+          "N07002": {
+            "count": 2,
+            "message": "invalid object declaration",
+            "level": "NonblockingError"
+          },
+          "N01005": {
+            "count": 2,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          },
+          "E03003": {
+            "count": 3,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "N01001": {
+            "count": 6,
+            "message": "invalid character",
+            "level": "NonblockingError"
+          },
+          "N02002": {
+            "count": 3,
+            "message": "invalid 'entry' function signature",
+            "level": "NonblockingError"
+          },
+          "W02009": {
+            "count": 6,
+            "message": "unused variable",
+            "level": "Warning"
+          },
+          "E06003": {
+            "count": 5,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "N02001": {
+            "count": 3,
+            "message": "unexpected token",
+            "level": "NonblockingError"
+          },
+          "E04003": {
+            "count": 1,
+            "message": "unbound type",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module 0x0::my_module {\n\n    // Allow duplicate alias warnings.\n    #[allow(duplicate_alias)]\n    // Import required modules.\n    use std::string;\n    use std::vector;\n\n    // Instead of std::signer, we use TxContext from Sui for entry function context.\n    use sui::tx_context::TxContext;\n    use sui::object::{UID};\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ERROR CODES\n    ////////////////////////////////////////////////////////////////////////////\n    const ENOT_CHARACTER_OWNER: u64 = 1;\n    const EINSUFFICIENT_CURRENCY: u64 = 2;\n    const EINVALID_ITEM_INDEX: u64 = 3;\n    const EPARTICIPANT_SELF: u64 = 4;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ENUMERATIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // For proper storage in objects, Rarity is given the required abilities.\n    public enum Rarity has copy, drop, store {\n        COMMON,\n        RARE,\n        EPIC,\n        LEGENDARY\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // RESOURCE DEFINITIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // GameItem is an object with a unique id.\n    struct GameItem has key, store, drop {\n        id: UID,\n        rarity: Rarity,\n        effect: string::String,\n    }\n\n    // Character is an object representing a player's character.\n    struct Character has key, store, drop {\n        id: UID,\n        owner: address,                   // Owner of the character.\n        strength: u64,                    // Physical power.\n        agility: u64,                     // Speed and evasiveness.\n        intelligence: u64,                // Magical or analytical abilities.\n        level: u64,                       // Current level.\n        experience: u64,                  // Current experience points.\n        achievements: vector<string::String>, // List of achievement descriptions.\n        inventory: vector<GameItem>,      // Items owned by the character.\n        currency: u64                     // In-game currency balance.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // HELPER FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // A simple linear congruential generator (LCG) for pseudo-random number generation.\n    // Note: This is not cryptographically secure. In production, use a verifiable random function.\n    fun secure_random(seed: u64): u64 {\n        let a = 6364136223846793005;\n        let c = 1;\n        seed * a + c\n    }\n\n    // Generate a random number in range [0, max).\n    fun random_in_range(seed: u64, max: u64): u64 {\n        let rnd = secure_random(seed);\n        rnd % max\n    }\n\n    // Check if the provided sender is the owner of the character.\n    fun assert_character_owner(ch: &Character, sender: address) {\n        if (ch.owner != sender) {\n            abort ENOT_CHARACTER_OWNER;\n        }\n    }\n\n    // Level up the character if enough experience has been accumulated.\n    fun try_level_up(ch: &mut Character) {\n        // Level up threshold: level * 100.\n        while (ch.experience >= ch.level * 100) {\n            ch.experience = ch.experience - ch.level * 100;\n            ch.level = ch.level + 1;\n            // Increase character attributes on level up.\n            ch.strength = ch.strength + 2;\n            ch.agility = ch.agility + 2;\n            ch.intelligence = ch.intelligence + 2;\n            // Record achievement for leveling up.\n            vector::push_back(&mut ch.achievements, string::utf8(\"Level Up\"));\n        }\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // PUBLIC ENTRY FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Create a new character.\n    public entry fun create_character(ctx: &mut TxContext, seed: u64): Character {\n        let addr = TxContext::sender(ctx);\n        let id = UID::new(ctx);\n        // Generate base attributes in the range 10 to 20.\n        let strength = 10 + random_in_range(seed, 11); // 10..20\n        let agility = 10 + random_in_range(seed + 1, 11);\n        let intelligence = 10 + random_in_range(seed + 2, 11);\n        Character {\n            id,\n            owner: addr,\n            strength,\n            agility,\n            intelligence,\n            level: 1,\n            experience: 0,\n            achievements: vector::empty<string::String>(),\n            inventory: vector::empty<GameItem>(),\n            currency: 100  // Starting currency.\n        }\n    }\n\n    // Create a new game item.\n    public entry fun create_item(ctx: &mut TxContext, rarity: Rarity, effect: string::String): GameItem {\n        let id = UID::new(ctx);\n        GameItem {\n            id,\n            rarity,\n            effect,\n        }\n    }\n\n    // Add an item to the sender's character inventory.\n    public entry fun add_item_to_character(ctx: &mut TxContext, ch: &mut Character, item: GameItem) {\n        let addr = TxContext::sender(ctx);\n        // Verify that the caller is the owner of the character.\n        assert_character_owner(ch, addr);\n        vector::push_back(&mut ch.inventory, item);\n    }\n\n    // Simulate combat between two characters.\n    // The outcome is determined based on character attributes and randomness.\n    // The attacker gains experience and currency rewards on victory.\n    public entry fun combat(\n        ctx: &mut TxContext,\n        attacker: &mut Character,\n        defender: &mut Character,\n        seed: u64\n    ): bool {\n        let caller = TxContext::sender(ctx);\n        // Verify caller owns the attacking character.\n        assert_character_owner(attacker, caller);\n        // Prevent self-combat.\n        if (attacker.owner == defender.owner) {\n            abort EPARTICIPANT_SELF;\n        }\n        // Compute attack power with a random bonus.\n        let attack_bonus = random_in_range(seed, attacker.strength + 1);\n        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;\n        // Compute defense power with a random bonus.\n        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);\n        let defense_power = defender.agility + defense_bonus + defender.level * 2;\n        if (attack_power > defense_power) {\n            // Attacker wins: Compute experience gain.\n            let exp_gain = (attack_power - defense_power) + 10;\n            attacker.experience = attacker.experience + exp_gain;\n            // Reward currency: transfer 10% of defender's currency.\n            let reward = defender.currency / 10;\n            if (defender.currency >= reward) {\n                defender.currency = defender.currency - reward;\n                attacker.currency = attacker.currency + reward;\n            }\n            // Record achievement for victory.\n            vector::push_back(&mut attacker.achievements, string::utf8(\"Victory!\"));\n            // Attempt to level up the attacker.\n            try_level_up(attacker);\n            true\n        } else {\n            // Defender wins: Attacker pays a penalty.\n            if (attacker.currency >= 5) {\n                attacker.currency = attacker.currency - 5;\n                defender.currency = defender.currency + 5;\n            }\n            // Record achievement for defeat.\n            vector::push_back(&mut attacker.achievements, string::utf8(\"Defeat in combat.\"));\n            false\n        }\n    }\n\n    // Trade an item from one character to another.\n    public entry fun trade_item(\n        ctx: &mut TxContext,\n        from: &mut Character,\n        to: &mut Character,\n        item_index: u64\n    ) {\n        let caller = TxContext::sender(ctx);\n        // Ensure the sender owns the source character.\n        assert_character_owner(from, caller);\n        let len = vector::length(&from.inventory);\n        if (item_index >= len) {\n            abort EINVALID_ITEM_INDEX;\n        }\n        let item = vector::remove(&mut from.inventory, item_index);\n        vector::push_back(&mut to.inventory, item);\n    }\n\n    // Exchange in-game currency between two characters.\n    public entry fun exchange_currency(\n        ctx: &mut TxContext,\n        from: &mut Character,\n        to: &mut Character,\n        amount: u64\n    ) {\n        let caller = TxContext::sender(ctx);\n        // Ensure the sender owns the source character.\n        assert_character_owner(from, caller);\n        if (from.currency < amount) {\n            abort EINSUFFICIENT_CURRENCY;\n        }\n        from.currency = from.currency - amount;\n        to.currency = to.currency + amount;\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nerror[E02015]: invalid attribute\n  \u250c\u2500 ./sources/temp_contract.move:4:7\n  \u2502\n4 \u2502     #[allow(duplicate_alias)]\n  \u2502       ^^^^^\n  \u2502       \u2502\n  \u2502       Known attribute 'allow' is not expected with a use\n  \u2502       Expected to be used with one of the following: module, constant, struct, enum, function\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:7:14\n  \u2502\n7 \u2502     use std::vector;\n  \u2502              ^^^^^^ Unnecessary alias 'vector' for module 'std::vector'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n   \u250c\u2500 ./sources/temp_contract.move:10:26\n   \u2502\n10 \u2502     use sui::tx_context::TxContext;\n   \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n   \u2502\n   = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n   \u250c\u2500 ./sources/temp_contract.move:11:23\n   \u2502\n11 \u2502     use sui::object::{UID};\n   \u2502                       ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n   \u2502\n   = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:38:5\n   \u2502\n38 \u2502     struct GameItem has key, store, drop {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:39:13\n   \u2502\n39 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:45:5\n   \u2502\n45 \u2502     struct Character has key, store, drop {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:46:13\n   \u2502\n46 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E04016]: too few arguments\n   \u250c\u2500 ./sources/temp_contract.move:94:53\n   \u2502\n94 \u2502             vector::push_back(&mut ch.achievements, string::utf8(\"Level Up\"));\n   \u2502                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n   \u2502                                                     \u2502           \u2502\n   \u2502                                                     \u2502           Found 0 argument(s) here\n   \u2502                                                     Invalid call of 'std::string::utf8'. The call expected 1 argument(s) but got 0\n\nerror[E01001]: invalid character\n   \u250c\u2500 ./sources/temp_contract.move:94:66\n   \u2502\n94 \u2502             vector::push_back(&mut ch.achievements, string::utf8(\"Level Up\"));\n   \u2502                                                                  ^ Unexpected character: '\"'\n\nerror[E01001]: invalid character\n   \u250c\u2500 ./sources/temp_contract.move:94:75\n   \u2502\n94 \u2502             vector::push_back(&mut ch.achievements, string::utf8(\"Level Up\"));\n   \u2502                                                                           ^ Unexpected character: '\"'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:103:39\n    \u2502\n103 \u2502     public entry fun create_character(ctx: &mut TxContext, seed: u64): Character {\n    \u2502            -----                      ^^^  -------------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                          \u2502     \n    \u2502            \u2502                          Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'create_character' was declared 'entry' here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:104:20\n    \u2502\n104 \u2502         let addr = TxContext::sender(ctx);\n    \u2502                    ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:105:18\n    \u2502\n105 \u2502         let id = UID::new(ctx);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:125:34\n    \u2502\n125 \u2502     public entry fun create_item(ctx: &mut TxContext, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            -----                 ^^^  -------------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                     \u2502     \n    \u2502            \u2502                     Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'create_item' was declared 'entry' here\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:125:55\n    \u2502\n125 \u2502     public entry fun create_item(ctx: &mut TxContext, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            -----                                      ^^^^^^  ------ 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                                          \u2502        \n    \u2502            \u2502                                          Invalid 'entry' parameter type for parameter 'rarity'\n    \u2502            'create_item' was declared 'entry' here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:126:18\n    \u2502\n126 \u2502         let id = UID::new(ctx);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:135:44\n    \u2502\n135 \u2502     public entry fun add_item_to_character(ctx: &mut TxContext, ch: &mut Character, item: GameItem) {\n    \u2502            -----                           ^^^  -------------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                               \u2502     \n    \u2502            \u2502                               Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'add_item_to_character' was declared 'entry' here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:136:20\n    \u2502\n136 \u2502         let addr = TxContext::sender(ctx);\n    \u2502                    ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:146:9\n    \u2502\n145 \u2502     public entry fun combat(\n    \u2502            ----- 'combat' was declared 'entry' here\n146 \u2502         ctx: &mut TxContext,\n    \u2502         ^^^  -------------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502         \u2502     \n    \u2502         Invalid 'entry' parameter type for parameter 'ctx'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:151:22\n    \u2502\n151 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:159:9\n    \u2502\n159 \u2502         let attack_bonus = random_in_range(seed, attacker.strength + 1);\n    \u2502         ^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'let'\n    \u2502         Expected ';'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:175:13\n    \u2502\n175 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Victory!\"));\n    \u2502             ^^^^^^\n    \u2502             \u2502\n    \u2502             Unexpected 'vector'\n    \u2502             Expected ';'\n\nerror[E04016]: too few arguments\n    \u250c\u2500 ./sources/temp_contract.move:175:59\n    \u2502\n175 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Victory!\"));\n    \u2502                                                           ^^^^^^^^^^^^^^^^^^^^^^^^\n    \u2502                                                           \u2502           \u2502\n    \u2502                                                           \u2502           Found 0 argument(s) here\n    \u2502                                                           Invalid call of 'std::string::utf8'. The call expected 1 argument(s) but got 0\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:175:72\n    \u2502\n175 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Victory!\"));\n    \u2502                                                                        ^ Unexpected character: '\"'\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:175:81\n    \u2502\n175 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Victory!\"));\n    \u2502                                                                                 ^ Unexpected character: '\"'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:186:13\n    \u2502\n186 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Defeat in combat.\"));\n    \u2502             ^^^^^^\n    \u2502             \u2502\n    \u2502             Unexpected 'vector'\n    \u2502             Expected ';'\n\nerror[E04016]: too few arguments\n    \u250c\u2500 ./sources/temp_contract.move:186:59\n    \u2502\n186 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Defeat in combat.\"));\n    \u2502                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    \u2502                                                           \u2502           \u2502\n    \u2502                                                           \u2502           Found 0 argument(s) here\n    \u2502                                                           Invalid call of 'std::string::utf8'. The call expected 1 argument(s) but got 0\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:186:72\n    \u2502\n186 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Defeat in combat.\"));\n    \u2502                                                                        ^ Unexpected character: '\"'\n\nerror[E01001]: invalid character\n    \u250c\u2500 ./sources/temp_contract.move:186:90\n    \u2502\n186 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(\"Defeat in combat.\"));\n    \u2502                                                                                          ^ Unexpected character: '\"'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:193:9\n    \u2502\n192 \u2502     public entry fun trade_item(\n    \u2502            ----- 'trade_item' was declared 'entry' here\n193 \u2502         ctx: &mut TxContext,\n    \u2502         ^^^  -------------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502         \u2502     \n    \u2502         Invalid 'entry' parameter type for parameter 'ctx'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:198:22\n    \u2502\n198 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:205:9\n    \u2502\n205 \u2502         let item = vector::remove(&mut from.inventory, item_index);\n    \u2502         ^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'let'\n    \u2502         Expected ';'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:211:9\n    \u2502\n210 \u2502     public entry fun exchange_currency(\n    \u2502            ----- 'exchange_currency' was declared 'entry' here\n211 \u2502         ctx: &mut TxContext,\n    \u2502         ^^^  -------------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502         \u2502     \n    \u2502         Invalid 'entry' parameter type for parameter 'ctx'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:216:22\n    \u2502\n216 \u2502         let caller = TxContext::sender(ctx);\n    \u2502                      ^^^^^^^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15\n    \u2502\n 21 \u2502 public struct TxContext has drop {\n    \u2502               --------- But 'TxContext' is an struct\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:222:9\n    \u2502\n222 \u2502         from.currency = from.currency - amount;\n    \u2502         ^^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'from'\n    \u2502         Expected ';'\n\n",
+      "metadata": {
+        "iteration": 2,
+        "timestamp": 1740791403.2195468,
+        "error_stats": {
+          "errors": 36,
+          "compiler_warnings": 3,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "N15002": {
+            "count": 1,
+            "message": "invalid attribute",
+            "level": "NonblockingError"
+          },
+          "W21002": {
+            "count": 3,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "N03001": {
+            "count": 2,
+            "message": "invalid modifier",
+            "level": "NonblockingError"
+          },
+          "N01005": {
+            "count": 2,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          },
+          "E16004": {
+            "count": 3,
+            "message": "too few arguments",
+            "level": "BlockingError"
+          },
+          "N01001": {
+            "count": 6,
+            "message": "invalid character",
+            "level": "NonblockingError"
+          },
+          "N02002": {
+            "count": 7,
+            "message": "invalid 'entry' function signature",
+            "level": "NonblockingError"
+          },
+          "E06003": {
+            "count": 7,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "N02001": {
+            "count": 5,
+            "message": "unexpected token",
+            "level": "NonblockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module 0x0::my_module {\n\n    // Import standard modules.\n    use std::string;\n    use std::vector;\n\n    // Import Sui modules.\n    use sui::tx_context::TxContext;\n    use sui::object::UID;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ERROR CODES\n    ////////////////////////////////////////////////////////////////////////////\n    const ENOT_CHARACTER_OWNER: u64 = 1;\n    const EINSUFFICIENT_CURRENCY: u64 = 2;\n    const EINVALID_ITEM_INDEX: u64 = 3;\n    const EPARTICIPANT_SELF: u64 = 4;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ENUMERATIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Enum for item rarity. Must have abilities to be stored.\n    public enum Rarity has copy, drop, store {\n        COMMON,\n        RARE,\n        EPIC,\n        LEGENDARY\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // RESOURCE DEFINITIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // GameItem represents an in-game item. As an object, its first field must be a UID.\n    public struct GameItem has key, store {\n        id: UID,\n        rarity: Rarity,\n        effect: string::String\n    }\n\n    // Character represents a player\u2019s character.\n    public struct Character has key, store {\n        id: UID,\n        owner: address,                        // Owner of the character.\n        strength: u64,                         // Physical power.\n        agility: u64,                          // Speed and evasiveness.\n        intelligence: u64,                     // Magical or analytical abilities.\n        level: u64,                            // Current level.\n        experience: u64,                       // Current experience points.\n        achievements: vector<string::String>,  // Achievement logs.\n        inventory: vector<GameItem>,           // Items owned by the character.\n        currency: u64                          // In-game currency balance.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // HELPER FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // A simple linear congruential generator (LCG) for pseudo-random number generation.\n    // NOTE: This is not cryptographically secure. In production, use a verifiable random function.\n    fun secure_random(seed: u64): u64 {\n        let a = 6364136223846793005;\n        let c = 1;\n        seed * a + c\n    }\n\n    // Generate a random number in the range [0, max).\n    fun random_in_range(seed: u64, max: u64): u64 {\n        let rnd = secure_random(seed);\n        rnd % max\n    }\n\n    // Ensure the given sender is the owner of the character.\n    fun assert_character_owner(ch: &Character, sender: address) {\n        if (ch.owner != sender) {\n            abort ENOT_CHARACTER_OWNER;\n        }\n    }\n\n    // Level up the character if enough experience is accumulated.\n    fun try_level_up(ch: &mut Character) {\n        // Level-up threshold: current level * 100.\n        while (ch.experience >= ch.level * 100) {\n            ch.experience = ch.experience - ch.level * 100;\n            ch.level = ch.level + 1;\n            // Increase attributes as part of leveling up.\n            ch.strength = ch.strength + 2;\n            ch.agility = ch.agility + 2;\n            ch.intelligence = ch.intelligence + 2;\n            // Record achievement using a byte-string literal.\n            vector::push_back(&mut ch.achievements, string::utf8(b\"Level Up\"));\n        };\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // PUBLIC ENTRY FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Create a new character for the player.\n    // The TxContext is passed by value as required by Sui entry functions.\n    public entry fun create_character(ctx: TxContext, seed: u64): Character {\n        let mut ctx = ctx;\n        let addr = ctx.sender; // Assume TxContext has a field 'sender' of type address.\n        let id = UID::new(&mut ctx);\n        // Generate base attributes in the range 10..20.\n        let strength = 10 + random_in_range(seed, 11);\n        let agility = 10 + random_in_range(seed + 1, 11);\n        let intelligence = 10 + random_in_range(seed + 2, 11);\n        Character {\n            id,\n            owner: addr,\n            strength,\n            agility,\n            intelligence,\n            level: 1,\n            experience: 0,\n            achievements: vector::empty(),\n            inventory: vector::empty(),\n            currency: 100\n        }\n    }\n\n    // Create a new game item.\n    public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {\n        let mut ctx = ctx;\n        let id = UID::new(&mut ctx);\n        GameItem {\n            id,\n            rarity,\n            effect\n        }\n    }\n\n    // Add an item to the sender's character inventory.\n    public entry fun add_item_to_character(ctx: TxContext, ch: &mut Character, item: GameItem) {\n        let addr = ctx.sender; // TxContext passed by value is immutable; its fields can be copied.\n        assert_character_owner(ch, addr);\n        vector::push_back(&mut ch.inventory, item);\n    }\n\n    // Simulate combat between two different characters.\n    // On victory, the attacker gains experience and currency rewards.\n    public entry fun combat(ctx: TxContext, attacker: &mut Character, defender: &mut Character, seed: u64): bool {\n        let addr = ctx.sender;\n        assert_character_owner(attacker, addr);\n        if (attacker.owner == defender.owner) {\n            abort EPARTICIPANT_SELF;\n        };\n        let attack_bonus = random_in_range(seed, attacker.strength + 1);\n        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;\n        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);\n        let defense_power = defender.agility + defense_bonus + defender.level * 2;\n        if (attack_power > defense_power) {\n            let exp_gain = (attack_power - defense_power) + 10;\n            attacker.experience = attacker.experience + exp_gain;\n            let reward = defender.currency / 10;\n            if (defender.currency >= reward) {\n                defender.currency = defender.currency - reward;\n                attacker.currency = attacker.currency + reward;\n            };\n            vector::push_back(&mut attacker.achievements, string::utf8(b\"Victory!\"));\n            try_level_up(attacker);\n            true\n        } else {\n            if (attacker.currency >= 5) {\n                attacker.currency = attacker.currency - 5;\n                defender.currency = defender.currency + 5;\n            };\n            vector::push_back(&mut attacker.achievements, string::utf8(b\"Defeat in combat.\"));\n            false\n        }\n    }\n\n    // Trade an item from one character to another.\n    public entry fun trade_item(ctx: TxContext, from: &mut Character, to: &mut Character, item_index: u64) {\n        let addr = ctx.sender;\n        assert_character_owner(from, addr);\n        let len = vector::length(&from.inventory);\n        if (item_index >= len) {\n            abort EINVALID_ITEM_INDEX;\n        };\n        let item = vector::remove(&mut from.inventory, item_index);\n        vector::push_back(&mut to.inventory, item);\n    }\n\n    // Exchange in-game currency between two characters.\n    public entry fun exchange_currency(ctx: TxContext, from: &mut Character, to: &mut Character, amount: u64) {\n        let addr = ctx.sender;\n        assert_character_owner(from, addr);\n        if (from.currency < amount) {\n            abort EINSUFFICIENT_CURRENCY;\n        };\n        from.currency = from.currency - amount;\n        to.currency = to.currency + amount;\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:14\n  \u2502\n5 \u2502     use std::vector;\n  \u2502              ^^^^^^ Unnecessary alias 'vector' for module 'std::vector'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:8:26\n  \u2502\n8 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:9:22\n  \u2502\n9 \u2502     use sui::object::UID;\n  \u2502                      ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:102:12\n    \u2502\n 43 \u2502     public struct Character has key, store {\n    \u2502                   --------- To satisfy the constraint, the 'drop' ability would need to be added here\n    \u00b7\n102 \u2502     public entry fun create_character(ctx: TxContext, seed: u64): Character {\n    \u2502            ^^^^^                                                  --------- The type '0x0::my_module::Character' does not have the ability 'drop'\n    \u2502            \u2502                                                       \n    \u2502            Invalid return type for entry function 'create_character'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:102:39\n    \u2502\n102 \u2502     public entry fun create_character(ctx: TxContext, seed: u64): Character {\n    \u2502            -----                      ^^^  --------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                          \u2502     \n    \u2502            \u2502                          Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'create_character' was declared 'entry' here\n\nerror[E04001]: restricted visibility\n    \u250c\u2500 ./sources/temp_contract.move:104:20\n    \u2502\n104 \u2502         let addr = ctx.sender; // Assume TxContext has a field 'sender' of type address.\n    \u2502                    ^^^^^^^^^^ Invalid access of field 'sender' on the struct 'sui::tx_context::TxContext'. The field 'sender' can only be accessed within the module 'sui::tx_context' since it defines 'TxContext'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:105:18\n    \u2502\n105 \u2502         let id = UID::new(&mut ctx);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:125:12\n    \u2502\n 36 \u2502     public struct GameItem has key, store {\n    \u2502                   -------- To satisfy the constraint, the 'drop' ability would need to be added here\n    \u00b7\n125 \u2502     public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            ^^^^^                                                                          -------- The type '0x0::my_module::GameItem' does not have the ability 'drop'\n    \u2502            \u2502                                                                               \n    \u2502            Invalid return type for entry function 'create_item'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:125:34\n    \u2502\n125 \u2502     public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            -----                 ^^^  --------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                     \u2502     \n    \u2502            \u2502                     Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'create_item' was declared 'entry' here\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:125:50\n    \u2502\n125 \u2502     public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            -----                                 ^^^^^^  ------ 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                                     \u2502        \n    \u2502            \u2502                                     Invalid 'entry' parameter type for parameter 'rarity'\n    \u2502            'create_item' was declared 'entry' here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:127:18\n    \u2502\n127 \u2502         let id = UID::new(&mut ctx);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:136:44\n    \u2502\n136 \u2502     public entry fun add_item_to_character(ctx: TxContext, ch: &mut Character, item: GameItem) {\n    \u2502            -----                           ^^^  --------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                               \u2502     \n    \u2502            \u2502                               Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'add_item_to_character' was declared 'entry' here\n\nerror[E04001]: restricted visibility\n    \u250c\u2500 ./sources/temp_contract.move:137:20\n    \u2502\n137 \u2502         let addr = ctx.sender; // TxContext passed by value is immutable; its fields can be copied.\n    \u2502                    ^^^^^^^^^^ Invalid access of field 'sender' on the struct 'sui::tx_context::TxContext'. The field 'sender' can only be accessed within the module 'sui::tx_context' since it defines 'TxContext'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:144:29\n    \u2502\n144 \u2502     public entry fun combat(ctx: TxContext, attacker: &mut Character, defender: &mut Character, seed: u64): bool {\n    \u2502            -----            ^^^  --------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                \u2502     \n    \u2502            \u2502                Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'combat' was declared 'entry' here\n\nerror[E04001]: restricted visibility\n    \u250c\u2500 ./sources/temp_contract.move:145:20\n    \u2502\n145 \u2502         let addr = ctx.sender;\n    \u2502                    ^^^^^^^^^^ Invalid access of field 'sender' on the struct 'sui::tx_context::TxContext'. The field 'sender' can only be accessed within the module 'sui::tx_context' since it defines 'TxContext'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:176:33\n    \u2502\n176 \u2502     public entry fun trade_item(ctx: TxContext, from: &mut Character, to: &mut Character, item_index: u64) {\n    \u2502            -----                ^^^  --------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                    \u2502     \n    \u2502            \u2502                    Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'trade_item' was declared 'entry' here\n\nerror[E04001]: restricted visibility\n    \u250c\u2500 ./sources/temp_contract.move:177:20\n    \u2502\n177 \u2502         let addr = ctx.sender;\n    \u2502                    ^^^^^^^^^^ Invalid access of field 'sender' on the struct 'sui::tx_context::TxContext'. The field 'sender' can only be accessed within the module 'sui::tx_context' since it defines 'TxContext'\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:188:40\n    \u2502\n188 \u2502     public entry fun exchange_currency(ctx: TxContext, from: &mut Character, to: &mut Character, amount: u64) {\n    \u2502            -----                       ^^^  --------- 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                           \u2502     \n    \u2502            \u2502                           Invalid 'entry' parameter type for parameter 'ctx'\n    \u2502            'exchange_currency' was declared 'entry' here\n\nerror[E04001]: restricted visibility\n    \u250c\u2500 ./sources/temp_contract.move:189:20\n    \u2502\n189 \u2502         let addr = ctx.sender;\n    \u2502                    ^^^^^^^^^^ Invalid access of field 'sender' on the struct 'sui::tx_context::TxContext'. The field 'sender' can only be accessed within the module 'sui::tx_context' since it defines 'TxContext'\n\n",
+      "metadata": {
+        "iteration": 3,
+        "timestamp": 1740791440.059686,
+        "error_stats": {
+          "errors": 19,
+          "compiler_warnings": 3,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 3,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "N02002": {
+            "count": 9,
+            "message": "invalid 'entry' function signature",
+            "level": "NonblockingError"
+          },
+          "N01004": {
+            "count": 5,
+            "message": "restricted visibility",
+            "level": "NonblockingError"
+          },
+          "E06003": {
+            "count": 2,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          }
+        }
+      }
+    },
+    {
+      "input": "module 0x0::my_module {\n\n    // Import standard modules.\n    use std::string;\n    use std::vector;\n\n    // Import Sui modules.\n    use sui::signer;\n    use sui::object::{UID, move_to};\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ERROR CODES\n    ////////////////////////////////////////////////////////////////////////////\n    const ENOT_CHARACTER_OWNER: u64 = 1;\n    const EINSUFFICIENT_CURRENCY: u64 = 2;\n    const EINVALID_ITEM_INDEX: u64 = 3;\n    const EPARTICIPANT_SELF: u64 = 4;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ENUMERATIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Enum for item rarity. Must be storable.\n    public enum Rarity has copy, drop, store {\n        COMMON,\n        RARE,\n        EPIC,\n        LEGENDARY\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // RESOURCE DEFINITIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // GameItem represents an in-game item.\n    // For Sui objects, the first field must be a UID.\n    public struct GameItem has key, store {\n        id: UID,\n        rarity: Rarity,\n        effect: string::String\n    }\n\n    // Character represents a player\u2019s character.\n    // The 'id' field must be first and of type UID.\n    public struct Character has key, store {\n        id: UID,\n        owner: address,                        // Owner of the character.\n        strength: u64,                         // Physical power.\n        agility: u64,                          // Speed and evasiveness.\n        intelligence: u64,                     // Magical or analytical abilities.\n        level: u64,                            // Current level.\n        experience: u64,                       // Current experience points.\n        achievements: vector<string::String>,  // Achievement logs.\n        inventory: vector<GameItem>,           // Items owned by the character.\n        currency: u64                          // In-game currency balance.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // HELPER FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // A simple linear congruential generator (LCG) for pseudo\u2010random number generation.\n    // NOTE: This method is not cryptographically secure. In production, use a verifiable random function.\n    fun secure_random(seed: u64): u64 {\n        let a = 6364136223846793005;\n        let c = 1;\n        seed * a + c\n    }\n\n    // Generate a random number in the range [0, max).\n    fun random_in_range(seed: u64, max: u64): u64 {\n        let rnd = secure_random(seed);\n        rnd % max\n    }\n\n    // Ensure that the given sender is the owner of the character.\n    fun assert_character_owner(ch: &Character, sender: address) {\n        if (ch.owner != sender) {\n            abort ENOT_CHARACTER_OWNER;\n        }\n    }\n\n    // Level up the character if its experience meets the threshold.\n    fun try_level_up(ch: &mut Character) {\n        // Level-up threshold: current_level * 100.\n        while (ch.experience >= ch.level * 100) {\n            ch.experience = ch.experience - ch.level * 100;\n            ch.level = ch.level + 1;\n            // Increase attributes upon level-up.\n            ch.strength = ch.strength + 2;\n            ch.agility = ch.agility + 2;\n            ch.intelligence = ch.intelligence + 2;\n            // Record the level-up achievement.\n            vector::push_back(&mut ch.achievements, string::utf8(b\"Level Up\"));\n        };\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // PUBLIC ENTRY FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Create a new character.\n    // The character is stored (moved) into the sender\u2019s account and its UID is returned.\n    public entry fun create_character(sender: &signer, seed: u64): UID {\n        let addr = signer::address_of(sender);\n        let id = UID::new(sender);\n        // Generate base attributes in the range [10, 20].\n        let strength = 10 + random_in_range(seed, 11);\n        let agility = 10 + random_in_range(seed + 1, 11);\n        let intelligence = 10 + random_in_range(seed + 2, 11);\n        let character = Character {\n            id,\n            owner: addr,\n            strength,\n            agility,\n            intelligence,\n            level: 1,\n            experience: 0,\n            achievements: vector::empty(),\n            inventory: vector::empty(),\n            currency: 100  // Starting currency.\n        };\n        // Publish the character into the sender's account.\n        move_to(sender, character);\n        id\n    }\n\n    // Create a new game item.\n    // The created item's UID is returned and the item is moved to the sender\u2019s account.\n    public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): UID {\n        let id = UID::new(sender);\n        let item = GameItem {\n            id,\n            rarity,\n            effect\n        };\n        move_to(sender, item);\n        id\n    }\n\n    // Add an item to the sender's character inventory.\n    public entry fun add_item_to_character(sender: &signer, ch: &mut Character, item: GameItem) {\n        let addr = signer::address_of(sender);\n        // Verify ownership.\n        assert_character_owner(ch, addr);\n        vector::push_back(&mut ch.inventory, item);\n    }\n\n    // Simulate combat between two distinct characters.\n    // On victory, the attacker gains experience and a portion of the defender's currency.\n    public entry fun combat(sender: &signer, attacker: &mut Character, defender: &mut Character, seed: u64): bool {\n        let addr = signer::address_of(sender);\n        // Ensure the sender owns the attacker.\n        assert_character_owner(attacker, addr);\n        // Prevent self-combat.\n        if (attacker.owner == defender.owner) {\n            abort EPARTICIPANT_SELF;\n        };\n        // Compute attack and defense powers.\n        let attack_bonus = random_in_range(seed, attacker.strength + 1);\n        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;\n        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);\n        let defense_power = defender.agility + defense_bonus + defender.level * 2;\n        if (attack_power > defense_power) {\n            // Attacker wins.\n            let exp_gain = (attack_power - defense_power) + 10;\n            attacker.experience = attacker.experience + exp_gain;\n            // Reward: transfer 10% of defender's currency.\n            let reward = defender.currency / 10;\n            if (defender.currency >= reward) {\n                defender.currency = defender.currency - reward;\n                attacker.currency = attacker.currency + reward;\n            };\n            vector::push_back(&mut attacker.achievements, string::utf8(b\"Victory!\"));\n            try_level_up(attacker);\n            true\n        } else {\n            // Defender wins; apply penalty to attacker.\n            if (attacker.currency >= 5) {\n                attacker.currency = attacker.currency - 5;\n                defender.currency = defender.currency + 5;\n            };\n            vector::push_back(&mut attacker.achievements, string::utf8(b\"Defeat in combat.\"));\n            false\n        }\n    }\n\n    // Trade an item from one character to another.\n    public entry fun trade_item(sender: &signer, from: &mut Character, to: &mut Character, item_index: u64) {\n        let addr = signer::address_of(sender);\n        // Verify sender's ownership of the 'from' character.\n        assert_character_owner(from, addr);\n        let len = vector::length(&from.inventory);\n        if (item_index >= len) {\n            abort EINVALID_ITEM_INDEX;\n        };\n        let item = vector::remove(&mut from.inventory, item_index);\n        vector::push_back(&mut to.inventory, item);\n    }\n\n    // Exchange in-game currency between characters.\n    public entry fun exchange_currency(sender: &signer, from: &mut Character, to: &mut Character, amount: u64) {\n        let addr = signer::address_of(sender);\n        // Verify sender's ownership.\n        assert_character_owner(from, addr);\n        if (from.currency < amount) {\n            abort EINSUFFICIENT_CURRENCY;\n        };\n        from.currency = from.currency - amount;\n        to.currency = to.currency + amount;\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:14\n  \u2502\n5 \u2502     use std::vector;\n  \u2502              ^^^^^^ Unnecessary alias 'vector' for module 'std::vector'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:8:9\n  \u2502\n8 \u2502     use sui::signer;\n  \u2502         ^^^^^^^^^^^ Invalid 'use'. Unbound module: 'sui::signer'\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:9:23\n  \u2502\n9 \u2502     use sui::object::{UID, move_to};\n  \u2502                       ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:9:28\n  \u2502\n9 \u2502     use sui::object::{UID, move_to};\n  \u2502                            ^^^^^^^ Invalid 'use'. Unbound member 'move_to' in module 'sui::object'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13\n  \u2502\n5 \u2502 module sui::object;\n  \u2502             ------ Module 'sui::object' declared here\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:104:12\n    \u2502\n104 \u2502     public entry fun create_character(sender: &signer, seed: u64): UID {\n    \u2502            ^^^^^                                                   --- The type 'sui::object::UID' does not have the ability 'drop'\n    \u2502            \u2502                                                        \n    \u2502            Invalid return type for entry function 'create_character'\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:105:20\n    \u2502\n105 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:106:18\n    \u2502\n106 \u2502         let id = UID::new(sender);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:124:9\n    \u2502\n124 \u2502         move_to(sender, character);\n    \u2502         ^^^^^^^ Unbound function 'move_to' in current scope\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:130:12\n    \u2502\n130 \u2502     public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): UID {\n    \u2502            ^^^^^                                                                           --- The type 'sui::object::UID' does not have the ability 'drop'\n    \u2502            \u2502                                                                                \n    \u2502            Invalid return type for entry function 'create_item'\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:130:51\n    \u2502\n130 \u2502     public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): UID {\n    \u2502            -----                                  ^^^^^^  ------ 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                                      \u2502        \n    \u2502            \u2502                                      Invalid 'entry' parameter type for parameter 'rarity'\n    \u2502            'create_item' was declared 'entry' here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:131:18\n    \u2502\n131 \u2502         let id = UID::new(sender);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[E03005]: unbound unscoped name\n    \u250c\u2500 ./sources/temp_contract.move:137:9\n    \u2502\n137 \u2502         move_to(sender, item);\n    \u2502         ^^^^^^^ Unbound function 'move_to' in current scope\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:142:44\n    \u2502\n142 \u2502     public entry fun add_item_to_character(sender: &signer, ch: &mut Character, item: GameItem) {\n    \u2502                                            ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:143:20\n    \u2502\n143 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:151:29\n    \u2502\n151 \u2502     public entry fun combat(sender: &signer, attacker: &mut Character, defender: &mut Character, seed: u64): bool {\n    \u2502                             ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:152:20\n    \u2502\n152 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:189:33\n    \u2502\n189 \u2502     public entry fun trade_item(sender: &signer, from: &mut Character, to: &mut Character, item_index: u64) {\n    \u2502                                 ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:190:20\n    \u2502\n190 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:202:40\n    \u2502\n202 \u2502     public entry fun exchange_currency(sender: &signer, from: &mut Character, to: &mut Character, amount: u64) {\n    \u2502                                        ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:203:20\n    \u2502\n203 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\n",
+      "metadata": {
+        "iteration": 4,
+        "timestamp": 1740791482.233165,
+        "error_stats": {
+          "errors": 20,
+          "compiler_warnings": 6,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "E03003": {
+            "count": 1,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "N02002": {
+            "count": 3,
+            "message": "invalid 'entry' function signature",
+            "level": "NonblockingError"
+          },
+          "E06003": {
+            "count": 7,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "E05003": {
+            "count": 2,
+            "message": "unbound unscoped name",
+            "level": "BlockingError"
+          },
+          "W02009": {
+            "count": 4,
+            "message": "unused variable",
+            "level": "Warning"
+          }
+        }
+      }
+    },
+    {
+      "input": "module 0x0::my_module {\n\n    // Import standard modules.\n    use std::string;\n    use std::vector;\n    use std::signer;\n\n    // Import Sui object module for UID.\n    use sui::object::UID;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ERROR CODES\n    ////////////////////////////////////////////////////////////////////////////\n    const ENOT_CHARACTER_OWNER: u64 = 1;\n    const EINSUFFICIENT_CURRENCY: u64 = 2;\n    const EINVALID_ITEM_INDEX: u64 = 3;\n    const EPARTICIPANT_SELF: u64 = 4;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // ENUMERATIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Rarity for in-game items with required abilities.\n    public enum Rarity has copy, drop, store {\n        COMMON,\n        RARE,\n        EPIC,\n        LEGENDARY\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // RESOURCE DEFINITIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // GameItem represents an in-game item.\n    // For Sui objects, the first field must be a UID.\n    public struct GameItem has key, store, drop {\n        id: UID,\n        rarity: Rarity,\n        effect: string::String\n    }\n\n    // Character represents a player's character.\n    public struct Character has key, store, drop {\n        id: UID,\n        owner: address,                        // Owner of the character.\n        strength: u64,                         // Physical power.\n        agility: u64,                          // Speed and evasiveness.\n        intelligence: u64,                     // Magical/analytical ability.\n        level: u64,                            // Current level.\n        experience: u64,                       // Experience points.\n        achievements: vector<string::String>,  // Achievement logs.\n        inventory: vector<GameItem>,           // Owned items.\n        currency: u64                          // In-game currency.\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // HELPER FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Simple linear congruential generator (LCG) for pseudo-random number generation.\n    // NOTE: Not cryptographically secure; use a verifiable random function in production.\n    fun secure_random(seed: u64): u64 {\n        let a = 6364136223846793005;\n        let c = 1;\n        seed * a + c\n    }\n\n    // Returns a random number in the range [0, max).\n    fun random_in_range(seed: u64, max: u64): u64 {\n        let rnd = secure_random(seed);\n        rnd % max\n    }\n\n    // Asserts that the provided sender is the owner of the character.\n    fun assert_character_owner(ch: &Character, sender: address) {\n        if (ch.owner != sender) {\n            abort ENOT_CHARACTER_OWNER;\n        }\n    }\n\n    // Attempts to level up the character if enough experience has been accumulated.\n    fun try_level_up(ch: &mut Character) {\n        // Level-up threshold: current level * 100.\n        while (ch.experience >= ch.level * 100) {\n            ch.experience = ch.experience - ch.level * 100;\n            ch.level = ch.level + 1;\n            // Increment attributes on level up.\n            ch.strength = ch.strength + 2;\n            ch.agility = ch.agility + 2;\n            ch.intelligence = ch.intelligence + 2;\n            // Record the level-up achievement.\n            vector::push_back(&mut ch.achievements, string::utf8(b\"Level Up\".to_vec()));\n        }\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // PUBLIC ENTRY FUNCTIONS\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Create a new character.\n    // The returned Character will be published to the sender's account.\n    public entry fun create_character(sender: &signer, seed: u64): Character {\n        let addr = signer::address_of(sender);\n        let id = UID::new(sender);\n        // Generate base attributes between 10 and 20.\n        let strength = 10 + random_in_range(seed, 11);\n        let agility = 10 + random_in_range(seed + 1, 11);\n        let intelligence = 10 + random_in_range(seed + 2, 11);\n        Character {\n            id,\n            owner: addr,\n            strength,\n            agility,\n            intelligence,\n            level: 1,\n            experience: 0,\n            achievements: vector::empty(),\n            inventory: vector::empty(),\n            currency: 100\n        }\n    }\n\n    // Create a new game item.\n    // The returned GameItem will be published to the sender's account.\n    public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): GameItem {\n        let id = UID::new(sender);\n        GameItem {\n            id,\n            rarity,\n            effect\n        }\n    }\n\n    // Adds the given item to the character's inventory.\n    public entry fun add_item_to_character(sender: &signer, ch: &mut Character, item: GameItem) {\n        let addr = signer::address_of(sender);\n        // Ensure sender owns the character.\n        assert_character_owner(ch, addr);\n        vector::push_back(&mut ch.inventory, item);\n    }\n\n    // Simulate combat between two characters.\n    // Attacker wins if its computed attack power exceeds defender's defense power.\n    public entry fun combat(sender: &signer, attacker: &mut Character, defender: &mut Character, seed: u64): bool {\n        let addr = signer::address_of(sender);\n        // Verify sender is owner of attacker.\n        assert_character_owner(attacker, addr);\n        // Prevent self-combat.\n        if (attacker.owner == defender.owner) {\n            abort EPARTICIPANT_SELF;\n        }\n        // Calculate attack power.\n        let attack_bonus = random_in_range(seed, attacker.strength + 1);\n        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;\n        // Calculate defense power.\n        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);\n        let defense_power = defender.agility + defense_bonus + defender.level * 2;\n        if (attack_power > defense_power) {\n            // Attacker wins.\n            let exp_gain = (attack_power - defense_power) + 10;\n            attacker.experience = attacker.experience + exp_gain;\n            // Transfer 10% of defender's currency as reward.\n            let reward = defender.currency / 10;\n            if (defender.currency >= reward) {\n                defender.currency = defender.currency - reward;\n                attacker.currency = attacker.currency + reward;\n            }\n            vector::push_back(&mut attacker.achievements, string::utf8(b\"Victory!\".to_vec()));\n            try_level_up(attacker);\n            true\n        } else {\n            // Defender wins; apply penalty.\n            if (attacker.currency >= 5) {\n                attacker.currency = attacker.currency - 5;\n                defender.currency = defender.currency + 5;\n            }\n            vector::push_back(&mut attacker.achievements, string::utf8(b\"Defeat in combat.\".to_vec()));\n            false\n        }\n    }\n\n    // Trade an item from one character's inventory to another's.\n    public entry fun trade_item(sender: &signer, from: &mut Character, to: &mut Character, item_index: u64) {\n        let addr = signer::address_of(sender);\n        // Ensure sender owns the character transferring the item.\n        assert_character_owner(from, addr);\n        let len = vector::length(&from.inventory);\n        if (item_index >= len) {\n            abort EINVALID_ITEM_INDEX;\n        }\n        let item = vector::remove(&mut from.inventory, item_index);\n        vector::push_back(&mut to.inventory, item);\n    }\n\n    // Exchange currency between characters.\n    public entry fun exchange_currency(sender: &signer, from: &mut Character, to: &mut Character, amount: u64) {\n        let addr = signer::address_of(sender);\n        // Verify sender owns the character sending currency.\n        assert_character_owner(from, addr);\n        if (from.currency < amount) {\n            abort EINSUFFICIENT_CURRENCY;\n        }\n        from.currency = from.currency - amount;\n        to.currency = to.currency + amount;\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:14\n  \u2502\n5 \u2502     use std::vector;\n  \u2502              ^^^^^^ Unnecessary alias 'vector' for module 'std::vector'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:6:9\n  \u2502\n6 \u2502     use std::signer;\n  \u2502         ^^^^^^^^^^^ Invalid 'use'. Unbound module: 'std::signer'\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:9:22\n  \u2502\n9 \u2502     use sui::object::UID;\n  \u2502                      ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:38:13\n   \u2502\n38 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:45:13\n   \u2502\n45 \u2502         id: UID,\n   \u2502             ^^^\n   \u2502             \u2502\n   \u2502             Invalid field type. The struct was declared with the ability 'drop' so all fields require the ability 'drop'\n   \u2502             The type 'sui::object::UID' does not have the ability 'drop'\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'drop' ability would need to be added here\n\nerror[E04023]: invalid method call\n   \u250c\u2500 ./sources/temp_contract.move:93:66\n   \u2502\n93 \u2502             vector::push_back(&mut ch.achievements, string::utf8(b\"Level Up\".to_vec()));\n   \u2502                                                                  ^^^^^^^^^^^^^^^^^^^^\n   \u2502                                                                  \u2502           \u2502\n   \u2502                                                                  \u2502           No local 'use fun' alias was found for 'vector<u8>.to_vec', and no function 'to_vec' was found in the defining module 'std::vector'\n   \u2502                                                                  Invalid method call. No known method 'to_vec' on type 'vector<u8>'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:104:20\n    \u2502\n104 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:105:18\n    \u2502\n105 \u2502         let id = UID::new(sender);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nerror[Sui E02002]: invalid 'entry' function signature\n    \u250c\u2500 ./sources/temp_contract.move:126:51\n    \u2502\n126 \u2502     public entry fun create_item(sender: &signer, rarity: Rarity, effect: string::String): GameItem {\n    \u2502            -----                                  ^^^^^^  ------ 'entry' parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or 'Receiving' arguments (by-reference or by-value)\n    \u2502            \u2502                                      \u2502        \n    \u2502            \u2502                                      Invalid 'entry' parameter type for parameter 'rarity'\n    \u2502            'create_item' was declared 'entry' here\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:127:18\n    \u2502\n127 \u2502         let id = UID::new(sender);\n    \u2502                  ^^^ Invalid construction. Expected an enum\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- But 'UID' is an struct\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:136:44\n    \u2502\n136 \u2502     public entry fun add_item_to_character(sender: &signer, ch: &mut Character, item: GameItem) {\n    \u2502                                            ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:137:20\n    \u2502\n137 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:145:29\n    \u2502\n145 \u2502     public entry fun combat(sender: &signer, attacker: &mut Character, defender: &mut Character, seed: u64): bool {\n    \u2502                             ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:146:20\n    \u2502\n146 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:154:9\n    \u2502\n154 \u2502         let attack_bonus = random_in_range(seed, attacker.strength + 1);\n    \u2502         ^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'let'\n    \u2502         Expected ';'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:169:13\n    \u2502\n169 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(b\"Victory!\".to_vec()));\n    \u2502             ^^^^^^\n    \u2502             \u2502\n    \u2502             Unexpected 'vector'\n    \u2502             Expected ';'\n\nerror[E04023]: invalid method call\n    \u250c\u2500 ./sources/temp_contract.move:169:72\n    \u2502\n169 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(b\"Victory!\".to_vec()));\n    \u2502                                                                        ^^^^^^^^^^^^^^^^^^^^\n    \u2502                                                                        \u2502           \u2502\n    \u2502                                                                        \u2502           No local 'use fun' alias was found for 'vector<u8>.to_vec', and no function 'to_vec' was found in the defining module 'std::vector'\n    \u2502                                                                        Invalid method call. No known method 'to_vec' on type 'vector<u8>'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:178:13\n    \u2502\n178 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(b\"Defeat in combat.\".to_vec()));\n    \u2502             ^^^^^^\n    \u2502             \u2502\n    \u2502             Unexpected 'vector'\n    \u2502             Expected ';'\n\nerror[E04023]: invalid method call\n    \u250c\u2500 ./sources/temp_contract.move:178:72\n    \u2502\n178 \u2502             vector::push_back(&mut attacker.achievements, string::utf8(b\"Defeat in combat.\".to_vec()));\n    \u2502                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    \u2502                                                                        \u2502                    \u2502\n    \u2502                                                                        \u2502                    No local 'use fun' alias was found for 'vector<u8>.to_vec', and no function 'to_vec' was found in the defining module 'std::vector'\n    \u2502                                                                        Invalid method call. No known method 'to_vec' on type 'vector<u8>'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:184:33\n    \u2502\n184 \u2502     public entry fun trade_item(sender: &signer, from: &mut Character, to: &mut Character, item_index: u64) {\n    \u2502                                 ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:185:20\n    \u2502\n185 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:192:9\n    \u2502\n192 \u2502         let item = vector::remove(&mut from.inventory, item_index);\n    \u2502         ^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'let'\n    \u2502         Expected ';'\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:197:40\n    \u2502\n197 \u2502     public entry fun exchange_currency(sender: &signer, from: &mut Character, to: &mut Character, amount: u64) {\n    \u2502                                        ^^^^^^ Unused parameter 'sender'. Consider removing or prefixing with an underscore: '_sender'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:198:20\n    \u2502\n198 \u2502         let addr = signer::address_of(sender);\n    \u2502                    ^^^^^^ Could not resolve the name 'signer'\n\nerror[E01002]: unexpected token\n    \u250c\u2500 ./sources/temp_contract.move:204:9\n    \u2502\n204 \u2502         from.currency = from.currency - amount;\n    \u2502         ^^^^\n    \u2502         \u2502\n    \u2502         Unexpected 'from'\n    \u2502         Expected ';'\n\n",
+      "metadata": {
+        "iteration": 5,
+        "timestamp": 1740791512.881042,
+        "error_stats": {
+          "errors": 25,
+          "compiler_warnings": 6,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "N01005": {
+            "count": 2,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          },
+          "E23004": {
+            "count": 3,
+            "message": "invalid method call",
+            "level": "BlockingError"
+          },
+          "E06003": {
+            "count": 7,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "N02002": {
+            "count": 1,
+            "message": "invalid 'entry' function signature",
+            "level": "NonblockingError"
+          },
+          "W02009": {
+            "count": 4,
+            "message": "unused variable",
+            "level": "Warning"
+          },
+          "N02001": {
+            "count": 5,
+            "message": "unexpected token",
+            "level": "NonblockingError"
+          }
+        }
+      }
+    }
+  ],
+  "error_histogram": {
+    "W21002": [
+      1,
+      3,
+      3,
+      2,
+      2
+    ],
+    "E02003": [
+      2,
+      0,
+      0,
+      1,
+      1
+    ],
+    "N03001": [
+      2,
+      2,
+      0,
+      0,
+      0
+    ],
+    "N07002": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "N01005": [
+      2,
+      2,
+      0,
+      0,
+      2
+    ],
+    "E03003": [
+      3,
+      0,
+      0,
+      1,
+      0
+    ],
+    "N01001": [
+      6,
+      6,
+      0,
+      0,
+      0
+    ],
+    "N02002": [
+      3,
+      7,
+      9,
+      3,
+      1
+    ],
+    "W02009": [
+      6,
+      0,
+      0,
+      4,
+      4
+    ],
+    "E06003": [
+      5,
+      7,
+      2,
+      7,
+      7
+    ],
+    "N02001": [
+      3,
+      5,
+      0,
+      0,
+      5
+    ],
+    "E04003": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "N15002": [
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    "E16004": [
+      0,
+      3,
+      0,
+      0,
+      0
+    ],
+    "N01004": [
+      0,
+      0,
+      5,
+      0,
+      0
+    ],
+    "E05003": [
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "E23004": [
+      0,
+      0,
+      0,
+      0,
+      3
+    ]
+  },
+  "iterations_data": [
+    {
+      "iteration": 1,
+      "total_errors": 36,
+      "error_breakdown": {
+        "W21002": {
+          "count": 1,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 2,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "N03001": {
+          "count": 2,
+          "message": "invalid modifier",
+          "level": "NonblockingError"
+        },
+        "N07002": {
+          "count": 2,
+          "message": "invalid object declaration",
+          "level": "NonblockingError"
+        },
+        "N01005": {
+          "count": 2,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        },
+        "E03003": {
+          "count": 3,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "N01001": {
+          "count": 6,
+          "message": "invalid character",
+          "level": "NonblockingError"
+        },
+        "N02002": {
+          "count": 3,
+          "message": "invalid 'entry' function signature",
+          "level": "NonblockingError"
+        },
+        "W02009": {
+          "count": 6,
+          "message": "unused variable",
+          "level": "Warning"
+        },
+        "E06003": {
+          "count": 5,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "N02001": {
+          "count": 3,
+          "message": "unexpected token",
+          "level": "NonblockingError"
+        },
+        "E04003": {
+          "count": 1,
+          "message": "unbound type",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "total_errors": 36,
+      "error_breakdown": {
+        "N15002": {
+          "count": 1,
+          "message": "invalid attribute",
+          "level": "NonblockingError"
+        },
+        "W21002": {
+          "count": 3,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "N03001": {
+          "count": 2,
+          "message": "invalid modifier",
+          "level": "NonblockingError"
+        },
+        "N01005": {
+          "count": 2,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        },
+        "E16004": {
+          "count": 3,
+          "message": "too few arguments",
+          "level": "BlockingError"
+        },
+        "N01001": {
+          "count": 6,
+          "message": "invalid character",
+          "level": "NonblockingError"
+        },
+        "N02002": {
+          "count": 7,
+          "message": "invalid 'entry' function signature",
+          "level": "NonblockingError"
+        },
+        "E06003": {
+          "count": 7,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "N02001": {
+          "count": 5,
+          "message": "unexpected token",
+          "level": "NonblockingError"
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "total_errors": 19,
+      "error_breakdown": {
+        "W21002": {
+          "count": 3,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "N02002": {
+          "count": 9,
+          "message": "invalid 'entry' function signature",
+          "level": "NonblockingError"
+        },
+        "N01004": {
+          "count": 5,
+          "message": "restricted visibility",
+          "level": "NonblockingError"
+        },
+        "E06003": {
+          "count": 2,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "total_errors": 20,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "E03003": {
+          "count": 1,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "N02002": {
+          "count": 3,
+          "message": "invalid 'entry' function signature",
+          "level": "NonblockingError"
+        },
+        "E06003": {
+          "count": 7,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "E05003": {
+          "count": 2,
+          "message": "unbound unscoped name",
+          "level": "BlockingError"
+        },
+        "W02009": {
+          "count": 4,
+          "message": "unused variable",
+          "level": "Warning"
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "total_errors": 25,
+      "error_breakdown": {
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "N01005": {
+          "count": 2,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        },
+        "E23004": {
+          "count": 3,
+          "message": "invalid method call",
+          "level": "BlockingError"
+        },
+        "E06003": {
+          "count": 7,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "N02002": {
+          "count": 1,
+          "message": "invalid 'entry' function signature",
+          "level": "NonblockingError"
+        },
+        "W02009": {
+          "count": 4,
+          "message": "unused variable",
+          "level": "Warning"
+        },
+        "N02001": {
+          "count": 5,
+          "message": "unexpected token",
+          "level": "NonblockingError"
+        }
+      }
+    }
+  ],
+  "total_iterations": 5
+}

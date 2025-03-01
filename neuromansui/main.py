@@ -255,31 +255,48 @@ temp_addr = "0x0"
         shutil.rmtree(temp_dir)
 
 
-def generate_contract(prompt: str, system_prompt: str = "You are an expert in Sui Move smart contract development.") -> str:
+def generate_contract(prompt: str, system_prompt: str = "You are an expert in Sui Move smart contract development.", message_history: list = None) -> tuple[str, list]:
     """
     Use OpenAI API to generate contract code.
     
     Args:
         prompt: The prompt to send to the model
         system_prompt: The system prompt to set the model's behavior
+        message_history: Previous conversation history (optional)
         
     Returns:
-        Generated contract source code
+        Tuple containing:
+        - Generated contract source code
+        - Updated message history for future calls
     """
     console.print("[bold green]🛠️ Requesting contract generation from OpenAI...[/bold green]")
     console.print("[italic]Prompt being sent to the model:[/italic]")
     console.print(f"[dim]{prompt}[/dim]")
+    
+    # Initialize messages with system prompt if no history exists
+    if message_history is None:
+        messages = [
+            {"role": "system", "content": system_prompt},
+        ]
+    else:
+        messages = message_history.copy()
+    
+    # Add the new user message
+    messages.append({"role": "user", "content": prompt})
+    
     with console.status("[bold blue]Awaiting OpenAI response...[/bold blue]", spinner="dots"):
         response = client.chat.completions.create(
             model="o3-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
         )
+    
     generated = response.choices[0].message.content
+    
+    # Add the assistant's response to the message history
+    messages.append({"role": "assistant", "content": generated})
+    
     console.print("[bold green]✅ Contract generation successful![/bold green]")
-    return generated
+    return generated, messages
 
 
 def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterations: int = 5) -> tuple[str, list]:
@@ -296,9 +313,9 @@ def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterat
         - Final contract source code
         - List of detailed iteration data for fine-tuning
     """
-    previous_stats = None
     feedback_text = "Initial run"
     contract_source = ""
+    previous_stats = None
     
     # For metrics and fine-tuning data
     iterations_history = []
@@ -306,6 +323,9 @@ def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterat
     
     # Track error codes across iterations
     error_histogram = {}
+    
+    # Initialize message history
+    message_history = None
 
     if system_prompt is None:
         system_prompt = "You are an expert in Sui Move smart contract development."
@@ -321,8 +341,16 @@ def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterat
         
         for i in range(max_iterations):
             console.print(f"\n[bold yellow]=== Iteration {i+1}/{max_iterations} ===[/bold yellow]\n")
-            full_prompt = base_prompt if i == 0 else f"{base_prompt}\n\nFeedback: {feedback_text}"
-            contract_source = generate_contract(full_prompt, system_prompt)
+            
+            # For the first iteration, use the base prompt
+            # For subsequent iterations, provide feedback on the previous attempt
+            if i == 0:
+                current_prompt = base_prompt
+            else:
+                current_prompt = f"The previous contract had compilation errors. Here is the compiler feedback:\n\n{feedback_text}\n\nPlease revise the contract to resolve these issues."
+            
+            # Generate contract using message history
+            contract_source, message_history = generate_contract(current_prompt, system_prompt, message_history)
             
             console.print("[bold cyan]Generated contract source:[/bold cyan]")
             console.print(contract_source)
@@ -371,7 +399,7 @@ def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterat
             # Create a record of this iteration for fine-tuning
             iteration_data = {
                 "iteration": i+1,
-                "prompt": full_prompt,
+                "prompt": current_prompt,
                 "contract_source": contract_source,
                 "compiler_output": strip_ansi(compiled_result.feedback.verbose_output),
                 "is_successful": compiled_result.is_successful,
@@ -412,12 +440,9 @@ def iterative_evaluation(base_prompt: str, system_prompt: str = None, max_iterat
                 console.print("[bold green]Contract compiled successfully![/bold green]")
                 break
             else:
-                feedback_text = (
-                    f"The contract did not compile.\n\n{strip_ansi(compiled_result.feedback.verbose_output)}\n"
-                )
+                feedback_text = strip_ansi(compiled_result.feedback.verbose_output)
                 if delta_str:
-                    feedback_text += delta_str + "\n"
-                feedback_text += "Please revise the contract accordingly, ensuring that all issues are resolved."
+                    feedback_text += "\n" + delta_str
                 time.sleep(1)
     
     # Print summary metrics

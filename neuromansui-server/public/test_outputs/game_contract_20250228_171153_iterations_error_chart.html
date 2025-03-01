@@ -1,0 +1,2491 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sui Move Contract Analysis</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/rust.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/toml.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/markdown.min.js"></script>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: white;
+                    color: #EF4444;
+                }
+                .container {
+                    width: 95%;
+                    margin: 20px auto;
+                    min-height: 85vh; /* Ensure container takes up most of the viewport height */
+                }
+                .tab {
+                    overflow: hidden;
+                    border: 1px solid #ccc;
+                    background-color: #f1f1f1;
+                    border-radius: 5px 5px 0 0;
+                }
+                .tab button {
+                    background-color: inherit;
+                    float: left;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 14px 16px;
+                    transition: 0.3s;
+                    font-size: 16px;
+                    color: #EF4444;
+                }
+                .tab button:hover {
+                    background-color: #ddd;
+                }
+                .tab button.active {
+                    background-color: #ccc;
+                }
+                .tabcontent {
+                    display: none;
+                    padding: 6px 12px;
+                    border: 1px solid #ccc;
+                    border-top: none;
+                    border-radius: 0 0 5px 5px;
+                    animation: fadeEffect 1s;
+                    background-color: #fff;
+                    min-height: 70vh; /* Ensure tab content area is tall enough */
+                }
+                @keyframes fadeEffect {
+                    from {opacity: 0;}
+                    to {opacity: 1;}
+                }
+                pre {
+                    margin: 0;
+                    padding: 16px;
+                    overflow: auto;
+                    border-radius: 4px;
+                }
+                code {
+                    font-family: 'Courier New', Courier, monospace;
+                }
+                .hljs-line-numbers {
+                    text-align: right;
+                    padding-right: 10px;
+                    color: #999;
+                    border-right: 1px solid #ddd;
+                    margin-right: 10px;
+                    user-select: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 style="text-align: center; color: #1E3A8A;">Sui Move Contract Analysis</h1>
+                
+                <div class="tab" id="tabs">
+                    <button class="tablinks active" id="ErrorChartTab">Error Chart</button>
+        
+                    <button class="tablinks" id="Iteration1Tab">Iteration 1</button>
+                
+                    <button class="tablinks" id="Iteration2Tab">Iteration 2</button>
+                
+                    <button class="tablinks" id="Iteration3Tab">Iteration 3</button>
+                
+                    <button class="tablinks" id="Iteration4Tab">Iteration 4</button>
+                
+                    <button class="tablinks" id="Iteration5Tab">Iteration 5</button>
+                
+                </div>
+                
+                <div id="ErrorChart" class="tabcontent" style="display: block;">
+                    <div id="plotly-chart"></div>
+        
+                    <div class="prompt-console" style="margin-top: 30px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <div class="console-header" style="background-color: #F1F5F9; padding: 10px 15px; border-bottom: 1px solid #CBD5E1;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #EF4444; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #F59E0B; margin-right: 8px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #10B981; margin-right: 8px;"></div>
+                                <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 14px;">Initial Prompt</span>
+                            </div>
+                        </div>
+                        <div class="console-body" style="background-color: #F1F5F9; padding: 15px; max-height: 350px; overflow-y: auto;">
+                            <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 14px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that implements a blockchain game with these features:
+
+- A character/game entity type with attributes (strength, agility, intelligence)
+- A game item type with different rarities and effects
+- Combat mechanics for characters to battle (include randomness with a seed)
+- Experience and leveling system
+- Player rewards and achievements
+- An economy system with tradable items and currency
+- Anti-cheat mechanisms and secure random number generation
+
+Include helpful comments in your code to explain mechanics, algorithms and design decisions.
+Ensure the code follows best practices for secure and efficient Sui Move development. 
+
+</pre>
+                        </div>
+                    </div>
+            
+                </div>
+        
+                <div id="Iteration1" class="tabcontent">
+                    <h3>Contract Source - Iteration 1</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 1</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">
+# Move.toml configuration:
+```
+
+[package]
+name = &quot;TempContract&quot;
+version = &quot;0.0.1&quot;
+edition = &quot;2024.beta&quot;
+
+[dependencies]
+Sui = { git = &quot;https://github.com/MystenLabs/sui.git&quot;, subdir = &quot;crates/sui-framework/packages/sui-framework&quot;, rev = &quot;framework/testnet&quot; }
+
+[addresses]
+temp_addr = &quot;0x0&quot;
+
+```
+
+# Module Name:
+You should create a module named &#039;my_module&#039;
+
+# Original Prompt:
+Generate a complete, semantically correct Sui Move contract that implements a blockchain game with these features:
+
+- A character/game entity type with attributes (strength, agility, intelligence)
+- A game item type with different rarities and effects
+- Combat mechanics for characters to battle (include randomness with a seed)
+- Experience and leveling system
+- Player rewards and achievements
+- An economy system with tradable items and currency
+- Anti-cheat mechanisms and secure random number generation
+
+Include helpful comments in your code to explain mechanics, algorithms and design decisions.
+Ensure the code follows best practices for secure and efficient Sui Move development. 
+
+</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module 0x0::my_module {
+
+    use std::vector;
+    use std::string;
+    use std::signer;
+    use std::error;
+    // Error codes
+    const ENOT_CHARACTER_OWNER: u64 = 1;
+    const EINSUFFICIENT_CURRENCY: u64 = 2;
+    const EINVALID_ITEM_INDEX: u64 = 3;
+    const EPARTICIPANT_SELF: u64 = 4;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ENUMERATIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Define rarities for in-game items.
+    public enum Rarity {
+        COMMON,
+        RARE,
+        EPIC,
+        LEGENDARY
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RESOURCE DEFINITIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Resource representing a game item. Each item has a rarity and an effect description.
+    struct GameItem has store, key {
+        rarity: Rarity,
+        effect: string::String,
+    }
+
+    // Resource representing a player’s character in the game.
+    struct Character has store, key {
+        owner: address,                   // Owner of the character.
+        strength: u64,                    // Physical power.
+        agility: u64,                     // Speed and evasiveness.
+        intelligence: u64,                // Magical or analytical abilities.
+        level: u64,                       // Current level.
+        experience: u64,                  // Current experience points.
+        achievements: vector&lt;string::String&gt;, // List of achievement descriptions.
+        inventory: vector&lt;GameItem&gt;,      // Items owned by the character.
+        currency: u64                     // In-game currency balance.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HELPER FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Simple linear congruential generator (LCG) for pseudo-random number generation.
+    // Note: This is not cryptographically secure. In practice, use a verifiable random function.
+    fun secure_random(seed: u64) : u64 {
+        // Constants for LCG (example values)
+        let a = 6364136223846793005;
+        let c = 1;
+        (seed * a + c)
+    }
+
+    // Generate a random number in range [0, max)
+    fun random_in_range(seed: u64, max: u64): u64 {
+        let rnd = secure_random(seed);
+        rnd % max
+    }
+
+    // Internal function to check if the caller is the owner of the character.
+    fun assert_character_owner(ch: &amp;Character, sender: address) {
+        if (ch.owner != sender) {
+            abort ENOT_CHARACTER_OWNER;
+        }
+    }
+
+    // Level up the character if enough experience has been accumulated.
+    fun try_level_up(ch: &amp;mut Character) {
+        // Level up threshold: level * 100.
+        while (ch.experience &gt;= ch.level * 100) {
+            ch.experience = ch.experience - ch.level * 100;
+            ch.level = ch.level + 1;
+            // Increase character attributes on level up.
+            ch.strength = ch.strength + 2;
+            ch.agility = ch.agility + 2;
+            ch.intelligence = ch.intelligence + 2;
+            let achievement_msg = string::concat(
+                &quot;Leveled up to level &quot;,
+                string::utf8(ch.level)
+            );
+            vector::push_back(&amp;mut ch.achievements, achievement_msg);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // PUBLIC ENTRY FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Create a new character for the calling user.
+    // The attributes are pseudo-randomly generated using the provided seed.
+    public entry fun create_character(sender: &amp;signer, seed: u64): Character {
+        let addr = signer::address_of(sender);
+        // Base attributes between 10 and 20.
+        let strength = 10 + random_in_range(seed, 11); // 10..20
+        let agility = 10 + random_in_range(seed + 1, 11);
+        let intelligence = 10 + random_in_range(seed + 2, 11);
+        Character {
+            owner: addr,
+            strength,
+            agility,
+            intelligence,
+            level: 1,
+            experience: 0,
+            achievements: vector::empty&lt;string::String&gt;(),
+            inventory: vector::empty&lt;GameItem&gt;(),
+            currency: 100  // Starting currency.
+        }
+    }
+
+    // Create a new game item. The item is assigned to the owner&#039;s inventory.
+    public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): GameItem {
+        GameItem {
+            rarity,
+            effect,
+        }
+    }
+
+    // Add an item to the sender&#039;s character inventory.
+    // This function assumes the sender already has an existing character.
+    public entry fun add_item_to_character(sender: &amp;signer, ch: &amp;mut Character, item: GameItem) {
+        // Verify the caller is the owner.
+        let addr = signer::address_of(sender);
+        assert_character_owner(ch, addr);
+        vector::push_back(&amp;mut ch.inventory, item);
+    }
+
+    // Function to simulate combat between two characters.
+    // The attacker and defender must be different characters.
+    // The outcome is decided based on character attributes and random chance.
+    // The provided seed is combined with character attributes for randomness.
+    // On victory, the attacker gains experience and currency rewards.
+    public entry fun combat(
+        sender: &amp;signer,
+        attacker: &amp;mut Character,
+        defender: &amp;mut Character,
+        seed: u64
+    ): bool {
+        let caller = signer::address_of(sender);
+        // Only the owner of the attacker can initiate combat.
+        assert_character_owner(attacker, caller);
+        // Prevent a character from attacking itself.
+        if (attacker.owner == defender.owner) {
+            abort EPARTICIPANT_SELF;
+        }
+        // Calculate attack power: based on strength and a random bonus.
+        let attack_bonus = random_in_range(seed, attacker.strength + 1);
+        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;
+
+        // Calculate defense power: based on agility and a random bonus.
+        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);
+        let defense_power = defender.agility + defense_bonus + defender.level * 2;
+
+        // Determine damage as the difference, if any.
+        if (attack_power &gt; defense_power) {
+            // Attacker wins; compute experience gain.
+            let exp_gain = (attack_power - defense_power) + 10;
+            attacker.experience = attacker.experience + exp_gain;
+
+            // Reward currency: percentage of defender&#039;s currency.
+            let reward = defender.currency / 10; // 10% reward
+            if (defender.currency &gt;= reward) {
+                defender.currency = defender.currency - reward;
+                attacker.currency = attacker.currency + reward;
+            }
+            // Add achievement for winning combat.
+            let win_message = string::concat(&quot;Victory! Gained &quot;, string::utf8(exp_gain));
+            vector::push_back(&amp;mut attacker.achievements, win_message);
+
+            // Attempt level up if threshold reached.
+            try_level_up(attacker);
+            true
+        } else {
+            // Defender wins; attacker loses some currency as penalty.
+            if (attacker.currency &gt;= 5) {
+                attacker.currency = attacker.currency - 5;
+                defender.currency = defender.currency + 5;
+            }
+            // Add achievement for a close defeat.
+            let loss_message = string::concat(&quot;Defeat in combat. Attacker power: &quot;, 
+                                string::utf8(attack_power));
+            vector::push_back(&amp;mut attacker.achievements, loss_message);
+            false
+        }
+    }
+
+    // Trade an item from one character to another.
+    // The function ensures that the sender is the owner of the source character.
+    public entry fun trade_item(
+        sender: &amp;signer,
+        from: &amp;mut Character,
+        to: &amp;mut Character,
+        item_index: u64
+    ) {
+        let caller = signer::address_of(sender);
+        // Verify sender owns the &#039;from&#039; character.
+        assert_character_owner(from, caller);
+        let len = vector::length(&amp;from.inventory);
+        if (item_index &gt;= len) {
+            abort EINVALID_ITEM_INDEX;
+        };
+        // Remove the item from the sender&#039;s inventory.
+        let item = vector::remove(&amp;mut from.inventory, item_index as usize);
+        // Add the item to the recipient&#039;s inventory.
+        vector::push_back(&amp;mut to.inventory, item);
+    }
+
+    // Exchange in-game currency between two characters.
+    // The sender&#039;s character must have sufficient funds.
+    public entry fun exchange_currency(
+        sender: &amp;signer,
+        from: &amp;mut Character,
+        to: &amp;mut Character,
+        amount: u64
+    ) {
+        let caller = signer::address_of(sender);
+        // Verify sender owns the &#039;from&#039; character.
+        assert_character_owner(from, caller);
+        if (from.currency &lt; amount) {
+            abort EINSUFFICIENT_CURRENCY;
+        };
+        from.currency = from.currency - amount;
+        to.currency = to.currency + amount;
+    }
+
+}</code></pre>
+                </div>
+                
+                <div id="Iteration2" class="tabcontent">
+                    <h3>Contract Source - Iteration 2</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 2</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:3:14
+  │
+3 │     use std::vector;
+  │              ^^^^^^ Unnecessary alias &#039;vector&#039; for module &#039;std::vector&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:5:9
+  │
+5 │     use std::signer;
+  │         ^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;std::signer&#039;
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:6:9
+  │
+6 │     use std::error;
+  │         ^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;std::error&#039;
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:30:5
+   │
+30 │     struct GameItem has store, key {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02007]: invalid object declaration
+   ┌─ ./sources/temp_contract.move:31:9
+   │
+30 │     struct GameItem has store, key {
+   │                                --- The &#039;key&#039; ability is used to declare objects in Sui
+31 │         rarity: Rarity,
+   │         ^^^^^^ Invalid object &#039;GameItem&#039;. Structs with the &#039;key&#039; ability must have &#039;id: sui::object::UID&#039; as their first field
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:31:17
+   │
+18 │     public enum Rarity {
+   │                 ------ To satisfy the constraint, the &#039;store&#039; ability would need to be added here
+   ·
+31 │         rarity: Rarity,
+   │                 ^^^^^^
+   │                 │
+   │                 Invalid field type. The struct was declared with the ability &#039;key&#039; so all fields require the ability &#039;store&#039;
+   │                 The type &#039;0x0::my_module::Rarity&#039; does not have the ability &#039;store&#039;
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:31:17
+   │
+18 │     public enum Rarity {
+   │                 ------ To satisfy the constraint, the &#039;store&#039; ability would need to be added here
+   ·
+31 │         rarity: Rarity,
+   │                 ^^^^^^
+   │                 │
+   │                 Invalid field type. The struct was declared with the ability &#039;store&#039; so all fields require the ability &#039;store&#039;
+   │                 The type &#039;0x0::my_module::Rarity&#039; does not have the ability &#039;store&#039;
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:36:5
+   │
+36 │     struct Character has store, key {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[Sui E02007]: invalid object declaration
+   ┌─ ./sources/temp_contract.move:37:9
+   │
+36 │     struct Character has store, key {
+   │                                 --- The &#039;key&#039; ability is used to declare objects in Sui
+37 │         owner: address,                   // Owner of the character.
+   │         ^^^^^ Invalid object &#039;Character&#039;. Structs with the &#039;key&#039; ability must have &#039;id: sui::object::UID&#039; as their first field
+
+error[E03003]: unbound module member
+   ┌─ ./sources/temp_contract.move:84:35
+   │
+84 │             let achievement_msg = string::concat(
+   │                                   ^^^^^^^^^^^^^^ Invalid module access. Unbound function &#039;concat&#039; in module &#039;std::string&#039;
+
+error[E01001]: invalid character
+   ┌─ ./sources/temp_contract.move:85:17
+   │
+85 │                 &quot;Leveled up to level &quot;,
+   │                 ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01001]: invalid character
+   ┌─ ./sources/temp_contract.move:85:38
+   │
+85 │                 &quot;Leveled up to level &quot;,
+   │                                      ^ Unexpected character: &#039;&quot;&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+   ┌─ ./sources/temp_contract.move:98:12
+   │
+36 │     struct Character has store, key {
+   │            --------- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+   ·
+98 │     public entry fun create_character(sender: &amp;signer, seed: u64): Character {
+   │            ^^^^^                                                   --------- The type &#039;0x0::my_module::Character&#039; does not have the ability &#039;drop&#039;
+   │            │                                                        
+   │            Invalid return type for entry function &#039;create_character&#039;
+
+warning[W09002]: unused variable
+   ┌─ ./sources/temp_contract.move:98:39
+   │
+98 │     public entry fun create_character(sender: &amp;signer, seed: u64): Character {
+   │                                       ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+   │
+   = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+   ┌─ ./sources/temp_contract.move:99:20
+   │
+99 │         let addr = signer::address_of(sender);
+   │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:118:12
+    │
+ 30 │     struct GameItem has store, key {
+    │            -------- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+    ·
+118 │     public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): GameItem {
+    │            ^^^^^                                                                           -------- The type &#039;0x0::my_module::GameItem&#039; does not have the ability &#039;drop&#039;
+    │            │                                                                                
+    │            Invalid return type for entry function &#039;create_item&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:118:34
+    │
+118 │     public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): GameItem {
+    │                                  ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:118:51
+    │
+118 │     public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): GameItem {
+    │            -----                                  ^^^^^^  ------ &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                                      │        
+    │            │                                      Invalid &#039;entry&#039; parameter type for parameter &#039;rarity&#039;
+    │            &#039;create_item&#039; was declared &#039;entry&#039; here
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:127:44
+    │
+127 │     public entry fun add_item_to_character(sender: &amp;signer, ch: &amp;mut Character, item: GameItem) {
+    │                                            ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:129:20
+    │
+129 │         let addr = signer::address_of(sender);
+    │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:140:9
+    │
+140 │         sender: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:145:22
+    │
+145 │         let caller = signer::address_of(sender);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:153:9
+    │
+153 │         let attack_bonus = random_in_range(seed, attacker.strength + 1);
+    │         ^^^
+    │         │
+    │         Unexpected &#039;let&#039;
+    │         Expected &#039;;&#039;
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:173:13
+    │
+173 │             let win_message = string::concat(&quot;Victory! Gained &quot;, string::utf8(exp_gain));
+    │             ^^^
+    │             │
+    │             Unexpected &#039;let&#039;
+    │             Expected &#039;;&#039;
+
+error[E03003]: unbound module member
+    ┌─ ./sources/temp_contract.move:173:31
+    │
+173 │             let win_message = string::concat(&quot;Victory! Gained &quot;, string::utf8(exp_gain));
+    │                               ^^^^^^^^^^^^^^ Invalid module access. Unbound function &#039;concat&#039; in module &#039;std::string&#039;
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:173:46
+    │
+173 │             let win_message = string::concat(&quot;Victory! Gained &quot;, string::utf8(exp_gain));
+    │                                              ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:173:63
+    │
+173 │             let win_message = string::concat(&quot;Victory! Gained &quot;, string::utf8(exp_gain));
+    │                                                               ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:186:13
+    │
+186 │             let loss_message = string::concat(&quot;Defeat in combat. Attacker power: &quot;, 
+    │             ^^^
+    │             │
+    │             Unexpected &#039;let&#039;
+    │             Expected &#039;;&#039;
+
+error[E03003]: unbound module member
+    ┌─ ./sources/temp_contract.move:186:32
+    │
+186 │             let loss_message = string::concat(&quot;Defeat in combat. Attacker power: &quot;, 
+    │                                ^^^^^^^^^^^^^^ Invalid module access. Unbound function &#039;concat&#039; in module &#039;std::string&#039;
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:186:47
+    │
+186 │             let loss_message = string::concat(&quot;Defeat in combat. Attacker power: &quot;, 
+    │                                               ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:186:82
+    │
+186 │             let loss_message = string::concat(&quot;Defeat in combat. Attacker power: &quot;, 
+    │                                                                                  ^ Unexpected character: &#039;&quot;&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:196:9
+    │
+196 │         sender: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:201:22
+    │
+201 │         let caller = signer::address_of(sender);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03004]: unbound type
+    ┌─ ./sources/temp_contract.move:209:70
+    │
+209 │         let item = vector::remove(&amp;mut from.inventory, item_index as usize);
+    │                                                                      ^^^^^ Unbound type &#039;usize&#039; in current scope
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:217:9
+    │
+217 │         sender: &amp;signer,
+    │         ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:222:22
+    │
+222 │         let caller = signer::address_of(sender);
+    │                      ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module 0x0::my_module {
+
+    // Allow duplicate alias warnings.
+    #[allow(duplicate_alias)]
+    // Import required modules.
+    use std::string;
+    use std::vector;
+
+    // Instead of std::signer, we use TxContext from Sui for entry function context.
+    use sui::tx_context::TxContext;
+    use sui::object::{UID};
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ERROR CODES
+    ////////////////////////////////////////////////////////////////////////////
+    const ENOT_CHARACTER_OWNER: u64 = 1;
+    const EINSUFFICIENT_CURRENCY: u64 = 2;
+    const EINVALID_ITEM_INDEX: u64 = 3;
+    const EPARTICIPANT_SELF: u64 = 4;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ENUMERATIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // For proper storage in objects, Rarity is given the required abilities.
+    public enum Rarity has copy, drop, store {
+        COMMON,
+        RARE,
+        EPIC,
+        LEGENDARY
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RESOURCE DEFINITIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // GameItem is an object with a unique id.
+    struct GameItem has key, store, drop {
+        id: UID,
+        rarity: Rarity,
+        effect: string::String,
+    }
+
+    // Character is an object representing a player&#039;s character.
+    struct Character has key, store, drop {
+        id: UID,
+        owner: address,                   // Owner of the character.
+        strength: u64,                    // Physical power.
+        agility: u64,                     // Speed and evasiveness.
+        intelligence: u64,                // Magical or analytical abilities.
+        level: u64,                       // Current level.
+        experience: u64,                  // Current experience points.
+        achievements: vector&lt;string::String&gt;, // List of achievement descriptions.
+        inventory: vector&lt;GameItem&gt;,      // Items owned by the character.
+        currency: u64                     // In-game currency balance.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HELPER FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // A simple linear congruential generator (LCG) for pseudo-random number generation.
+    // Note: This is not cryptographically secure. In production, use a verifiable random function.
+    fun secure_random(seed: u64): u64 {
+        let a = 6364136223846793005;
+        let c = 1;
+        seed * a + c
+    }
+
+    // Generate a random number in range [0, max).
+    fun random_in_range(seed: u64, max: u64): u64 {
+        let rnd = secure_random(seed);
+        rnd % max
+    }
+
+    // Check if the provided sender is the owner of the character.
+    fun assert_character_owner(ch: &amp;Character, sender: address) {
+        if (ch.owner != sender) {
+            abort ENOT_CHARACTER_OWNER;
+        }
+    }
+
+    // Level up the character if enough experience has been accumulated.
+    fun try_level_up(ch: &amp;mut Character) {
+        // Level up threshold: level * 100.
+        while (ch.experience &gt;= ch.level * 100) {
+            ch.experience = ch.experience - ch.level * 100;
+            ch.level = ch.level + 1;
+            // Increase character attributes on level up.
+            ch.strength = ch.strength + 2;
+            ch.agility = ch.agility + 2;
+            ch.intelligence = ch.intelligence + 2;
+            // Record achievement for leveling up.
+            vector::push_back(&amp;mut ch.achievements, string::utf8(&quot;Level Up&quot;));
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // PUBLIC ENTRY FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Create a new character.
+    public entry fun create_character(ctx: &amp;mut TxContext, seed: u64): Character {
+        let addr = TxContext::sender(ctx);
+        let id = UID::new(ctx);
+        // Generate base attributes in the range 10 to 20.
+        let strength = 10 + random_in_range(seed, 11); // 10..20
+        let agility = 10 + random_in_range(seed + 1, 11);
+        let intelligence = 10 + random_in_range(seed + 2, 11);
+        Character {
+            id,
+            owner: addr,
+            strength,
+            agility,
+            intelligence,
+            level: 1,
+            experience: 0,
+            achievements: vector::empty&lt;string::String&gt;(),
+            inventory: vector::empty&lt;GameItem&gt;(),
+            currency: 100  // Starting currency.
+        }
+    }
+
+    // Create a new game item.
+    public entry fun create_item(ctx: &amp;mut TxContext, rarity: Rarity, effect: string::String): GameItem {
+        let id = UID::new(ctx);
+        GameItem {
+            id,
+            rarity,
+            effect,
+        }
+    }
+
+    // Add an item to the sender&#039;s character inventory.
+    public entry fun add_item_to_character(ctx: &amp;mut TxContext, ch: &amp;mut Character, item: GameItem) {
+        let addr = TxContext::sender(ctx);
+        // Verify that the caller is the owner of the character.
+        assert_character_owner(ch, addr);
+        vector::push_back(&amp;mut ch.inventory, item);
+    }
+
+    // Simulate combat between two characters.
+    // The outcome is determined based on character attributes and randomness.
+    // The attacker gains experience and currency rewards on victory.
+    public entry fun combat(
+        ctx: &amp;mut TxContext,
+        attacker: &amp;mut Character,
+        defender: &amp;mut Character,
+        seed: u64
+    ): bool {
+        let caller = TxContext::sender(ctx);
+        // Verify caller owns the attacking character.
+        assert_character_owner(attacker, caller);
+        // Prevent self-combat.
+        if (attacker.owner == defender.owner) {
+            abort EPARTICIPANT_SELF;
+        }
+        // Compute attack power with a random bonus.
+        let attack_bonus = random_in_range(seed, attacker.strength + 1);
+        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;
+        // Compute defense power with a random bonus.
+        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);
+        let defense_power = defender.agility + defense_bonus + defender.level * 2;
+        if (attack_power &gt; defense_power) {
+            // Attacker wins: Compute experience gain.
+            let exp_gain = (attack_power - defense_power) + 10;
+            attacker.experience = attacker.experience + exp_gain;
+            // Reward currency: transfer 10% of defender&#039;s currency.
+            let reward = defender.currency / 10;
+            if (defender.currency &gt;= reward) {
+                defender.currency = defender.currency - reward;
+                attacker.currency = attacker.currency + reward;
+            }
+            // Record achievement for victory.
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Victory!&quot;));
+            // Attempt to level up the attacker.
+            try_level_up(attacker);
+            true
+        } else {
+            // Defender wins: Attacker pays a penalty.
+            if (attacker.currency &gt;= 5) {
+                attacker.currency = attacker.currency - 5;
+                defender.currency = defender.currency + 5;
+            }
+            // Record achievement for defeat.
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Defeat in combat.&quot;));
+            false
+        }
+    }
+
+    // Trade an item from one character to another.
+    public entry fun trade_item(
+        ctx: &amp;mut TxContext,
+        from: &amp;mut Character,
+        to: &amp;mut Character,
+        item_index: u64
+    ) {
+        let caller = TxContext::sender(ctx);
+        // Ensure the sender owns the source character.
+        assert_character_owner(from, caller);
+        let len = vector::length(&amp;from.inventory);
+        if (item_index &gt;= len) {
+            abort EINVALID_ITEM_INDEX;
+        }
+        let item = vector::remove(&amp;mut from.inventory, item_index);
+        vector::push_back(&amp;mut to.inventory, item);
+    }
+
+    // Exchange in-game currency between two characters.
+    public entry fun exchange_currency(
+        ctx: &amp;mut TxContext,
+        from: &amp;mut Character,
+        to: &amp;mut Character,
+        amount: u64
+    ) {
+        let caller = TxContext::sender(ctx);
+        // Ensure the sender owns the source character.
+        assert_character_owner(from, caller);
+        if (from.currency &lt; amount) {
+            abort EINSUFFICIENT_CURRENCY;
+        }
+        from.currency = from.currency - amount;
+        to.currency = to.currency + amount;
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration3" class="tabcontent">
+                    <h3>Contract Source - Iteration 3</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 3</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+error[E02015]: invalid attribute
+  ┌─ ./sources/temp_contract.move:4:7
+  │
+4 │     #[allow(duplicate_alias)]
+  │       ^^^^^
+  │       │
+  │       Known attribute &#039;allow&#039; is not expected with a use
+  │       Expected to be used with one of the following: module, constant, struct, enum, function
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:7:14
+  │
+7 │     use std::vector;
+  │              ^^^^^^ Unnecessary alias &#039;vector&#039; for module &#039;std::vector&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+   ┌─ ./sources/temp_contract.move:10:26
+   │
+10 │     use sui::tx_context::TxContext;
+   │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+   │
+   = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+   ┌─ ./sources/temp_contract.move:11:23
+   │
+11 │     use sui::object::{UID};
+   │                       ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+   │
+   = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:38:5
+   │
+38 │     struct GameItem has key, store, drop {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:39:13
+   │
+39 │         id: UID,
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E01003]: invalid modifier
+   ┌─ ./sources/temp_contract.move:45:5
+   │
+45 │     struct Character has key, store, drop {
+   │     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported
+   │
+   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.
+
+error[E05001]: ability constraint not satisfied
+   ┌─ ./sources/temp_contract.move:46:13
+   │
+46 │         id: UID,
+   │             ^^^
+   │             │
+   │             Invalid field type. The struct was declared with the ability &#039;drop&#039; so all fields require the ability &#039;drop&#039;
+   │             The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+   │
+   ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+   │
+69 │ public struct UID has store {
+   │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E04016]: too few arguments
+   ┌─ ./sources/temp_contract.move:94:53
+   │
+94 │             vector::push_back(&amp;mut ch.achievements, string::utf8(&quot;Level Up&quot;));
+   │                                                     ^^^^^^^^^^^^^^^^^^^^^^^^
+   │                                                     │           │
+   │                                                     │           Found 0 argument(s) here
+   │                                                     Invalid call of &#039;std::string::utf8&#039;. The call expected 1 argument(s) but got 0
+
+error[E01001]: invalid character
+   ┌─ ./sources/temp_contract.move:94:66
+   │
+94 │             vector::push_back(&amp;mut ch.achievements, string::utf8(&quot;Level Up&quot;));
+   │                                                                  ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01001]: invalid character
+   ┌─ ./sources/temp_contract.move:94:75
+   │
+94 │             vector::push_back(&amp;mut ch.achievements, string::utf8(&quot;Level Up&quot;));
+   │                                                                           ^ Unexpected character: &#039;&quot;&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:103:39
+    │
+103 │     public entry fun create_character(ctx: &amp;mut TxContext, seed: u64): Character {
+    │            -----                      ^^^  -------------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                          │     
+    │            │                          Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;create_character&#039; was declared &#039;entry&#039; here
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:104:20
+    │
+104 │         let addr = TxContext::sender(ctx);
+    │                    ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:105:18
+    │
+105 │         let id = UID::new(ctx);
+    │                  ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:125:34
+    │
+125 │     public entry fun create_item(ctx: &amp;mut TxContext, rarity: Rarity, effect: string::String): GameItem {
+    │            -----                 ^^^  -------------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                     │     
+    │            │                     Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;create_item&#039; was declared &#039;entry&#039; here
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:125:55
+    │
+125 │     public entry fun create_item(ctx: &amp;mut TxContext, rarity: Rarity, effect: string::String): GameItem {
+    │            -----                                      ^^^^^^  ------ &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                                          │        
+    │            │                                          Invalid &#039;entry&#039; parameter type for parameter &#039;rarity&#039;
+    │            &#039;create_item&#039; was declared &#039;entry&#039; here
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:126:18
+    │
+126 │         let id = UID::new(ctx);
+    │                  ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:135:44
+    │
+135 │     public entry fun add_item_to_character(ctx: &amp;mut TxContext, ch: &amp;mut Character, item: GameItem) {
+    │            -----                           ^^^  -------------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                               │     
+    │            │                               Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;add_item_to_character&#039; was declared &#039;entry&#039; here
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:136:20
+    │
+136 │         let addr = TxContext::sender(ctx);
+    │                    ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:146:9
+    │
+145 │     public entry fun combat(
+    │            ----- &#039;combat&#039; was declared &#039;entry&#039; here
+146 │         ctx: &amp;mut TxContext,
+    │         ^^^  -------------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │         │     
+    │         Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:151:22
+    │
+151 │         let caller = TxContext::sender(ctx);
+    │                      ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:159:9
+    │
+159 │         let attack_bonus = random_in_range(seed, attacker.strength + 1);
+    │         ^^^
+    │         │
+    │         Unexpected &#039;let&#039;
+    │         Expected &#039;;&#039;
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:175:13
+    │
+175 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Victory!&quot;));
+    │             ^^^^^^
+    │             │
+    │             Unexpected &#039;vector&#039;
+    │             Expected &#039;;&#039;
+
+error[E04016]: too few arguments
+    ┌─ ./sources/temp_contract.move:175:59
+    │
+175 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Victory!&quot;));
+    │                                                           ^^^^^^^^^^^^^^^^^^^^^^^^
+    │                                                           │           │
+    │                                                           │           Found 0 argument(s) here
+    │                                                           Invalid call of &#039;std::string::utf8&#039;. The call expected 1 argument(s) but got 0
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:175:72
+    │
+175 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Victory!&quot;));
+    │                                                                        ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:175:81
+    │
+175 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Victory!&quot;));
+    │                                                                                 ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:186:13
+    │
+186 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Defeat in combat.&quot;));
+    │             ^^^^^^
+    │             │
+    │             Unexpected &#039;vector&#039;
+    │             Expected &#039;;&#039;
+
+error[E04016]: too few arguments
+    ┌─ ./sources/temp_contract.move:186:59
+    │
+186 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Defeat in combat.&quot;));
+    │                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │                                                           │           │
+    │                                                           │           Found 0 argument(s) here
+    │                                                           Invalid call of &#039;std::string::utf8&#039;. The call expected 1 argument(s) but got 0
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:186:72
+    │
+186 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Defeat in combat.&quot;));
+    │                                                                        ^ Unexpected character: &#039;&quot;&#039;
+
+error[E01001]: invalid character
+    ┌─ ./sources/temp_contract.move:186:90
+    │
+186 │             vector::push_back(&amp;mut attacker.achievements, string::utf8(&quot;Defeat in combat.&quot;));
+    │                                                                                          ^ Unexpected character: &#039;&quot;&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:193:9
+    │
+192 │     public entry fun trade_item(
+    │            ----- &#039;trade_item&#039; was declared &#039;entry&#039; here
+193 │         ctx: &amp;mut TxContext,
+    │         ^^^  -------------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │         │     
+    │         Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:198:22
+    │
+198 │         let caller = TxContext::sender(ctx);
+    │                      ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:205:9
+    │
+205 │         let item = vector::remove(&amp;mut from.inventory, item_index);
+    │         ^^^
+    │         │
+    │         Unexpected &#039;let&#039;
+    │         Expected &#039;;&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:211:9
+    │
+210 │     public entry fun exchange_currency(
+    │            ----- &#039;exchange_currency&#039; was declared &#039;entry&#039; here
+211 │         ctx: &amp;mut TxContext,
+    │         ^^^  -------------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │         │     
+    │         Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:216:22
+    │
+216 │         let caller = TxContext::sender(ctx);
+    │                      ^^^^^^^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/tx_context.move:21:15
+    │
+ 21 │ public struct TxContext has drop {
+    │               --------- But &#039;TxContext&#039; is an struct
+
+error[E01002]: unexpected token
+    ┌─ ./sources/temp_contract.move:222:9
+    │
+222 │         from.currency = from.currency - amount;
+    │         ^^^^
+    │         │
+    │         Unexpected &#039;from&#039;
+    │         Expected &#039;;&#039;
+
+
+[bold]Delta Changes:[/bold] Errors: [red]+0[/red] | Compiler Warnings: [yellow]-4[/yellow] | Linter Warnings: [blue]+0[/blue]
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module 0x0::my_module {
+
+    // Import standard modules.
+    use std::string;
+    use std::vector;
+
+    // Import Sui modules.
+    use sui::tx_context::TxContext;
+    use sui::object::UID;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ERROR CODES
+    ////////////////////////////////////////////////////////////////////////////
+    const ENOT_CHARACTER_OWNER: u64 = 1;
+    const EINSUFFICIENT_CURRENCY: u64 = 2;
+    const EINVALID_ITEM_INDEX: u64 = 3;
+    const EPARTICIPANT_SELF: u64 = 4;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ENUMERATIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Enum for item rarity. Must have abilities to be stored.
+    public enum Rarity has copy, drop, store {
+        COMMON,
+        RARE,
+        EPIC,
+        LEGENDARY
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RESOURCE DEFINITIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // GameItem represents an in-game item. As an object, its first field must be a UID.
+    public struct GameItem has key, store {
+        id: UID,
+        rarity: Rarity,
+        effect: string::String
+    }
+
+    // Character represents a player’s character.
+    public struct Character has key, store {
+        id: UID,
+        owner: address,                        // Owner of the character.
+        strength: u64,                         // Physical power.
+        agility: u64,                          // Speed and evasiveness.
+        intelligence: u64,                     // Magical or analytical abilities.
+        level: u64,                            // Current level.
+        experience: u64,                       // Current experience points.
+        achievements: vector&lt;string::String&gt;,  // Achievement logs.
+        inventory: vector&lt;GameItem&gt;,           // Items owned by the character.
+        currency: u64                          // In-game currency balance.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HELPER FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // A simple linear congruential generator (LCG) for pseudo-random number generation.
+    // NOTE: This is not cryptographically secure. In production, use a verifiable random function.
+    fun secure_random(seed: u64): u64 {
+        let a = 6364136223846793005;
+        let c = 1;
+        seed * a + c
+    }
+
+    // Generate a random number in the range [0, max).
+    fun random_in_range(seed: u64, max: u64): u64 {
+        let rnd = secure_random(seed);
+        rnd % max
+    }
+
+    // Ensure the given sender is the owner of the character.
+    fun assert_character_owner(ch: &amp;Character, sender: address) {
+        if (ch.owner != sender) {
+            abort ENOT_CHARACTER_OWNER;
+        }
+    }
+
+    // Level up the character if enough experience is accumulated.
+    fun try_level_up(ch: &amp;mut Character) {
+        // Level-up threshold: current level * 100.
+        while (ch.experience &gt;= ch.level * 100) {
+            ch.experience = ch.experience - ch.level * 100;
+            ch.level = ch.level + 1;
+            // Increase attributes as part of leveling up.
+            ch.strength = ch.strength + 2;
+            ch.agility = ch.agility + 2;
+            ch.intelligence = ch.intelligence + 2;
+            // Record achievement using a byte-string literal.
+            vector::push_back(&amp;mut ch.achievements, string::utf8(b&quot;Level Up&quot;));
+        };
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // PUBLIC ENTRY FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Create a new character for the player.
+    // The TxContext is passed by value as required by Sui entry functions.
+    public entry fun create_character(ctx: TxContext, seed: u64): Character {
+        let mut ctx = ctx;
+        let addr = ctx.sender; // Assume TxContext has a field &#039;sender&#039; of type address.
+        let id = UID::new(&amp;mut ctx);
+        // Generate base attributes in the range 10..20.
+        let strength = 10 + random_in_range(seed, 11);
+        let agility = 10 + random_in_range(seed + 1, 11);
+        let intelligence = 10 + random_in_range(seed + 2, 11);
+        Character {
+            id,
+            owner: addr,
+            strength,
+            agility,
+            intelligence,
+            level: 1,
+            experience: 0,
+            achievements: vector::empty(),
+            inventory: vector::empty(),
+            currency: 100
+        }
+    }
+
+    // Create a new game item.
+    public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {
+        let mut ctx = ctx;
+        let id = UID::new(&amp;mut ctx);
+        GameItem {
+            id,
+            rarity,
+            effect
+        }
+    }
+
+    // Add an item to the sender&#039;s character inventory.
+    public entry fun add_item_to_character(ctx: TxContext, ch: &amp;mut Character, item: GameItem) {
+        let addr = ctx.sender; // TxContext passed by value is immutable; its fields can be copied.
+        assert_character_owner(ch, addr);
+        vector::push_back(&amp;mut ch.inventory, item);
+    }
+
+    // Simulate combat between two different characters.
+    // On victory, the attacker gains experience and currency rewards.
+    public entry fun combat(ctx: TxContext, attacker: &amp;mut Character, defender: &amp;mut Character, seed: u64): bool {
+        let addr = ctx.sender;
+        assert_character_owner(attacker, addr);
+        if (attacker.owner == defender.owner) {
+            abort EPARTICIPANT_SELF;
+        };
+        let attack_bonus = random_in_range(seed, attacker.strength + 1);
+        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;
+        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);
+        let defense_power = defender.agility + defense_bonus + defender.level * 2;
+        if (attack_power &gt; defense_power) {
+            let exp_gain = (attack_power - defense_power) + 10;
+            attacker.experience = attacker.experience + exp_gain;
+            let reward = defender.currency / 10;
+            if (defender.currency &gt;= reward) {
+                defender.currency = defender.currency - reward;
+                attacker.currency = attacker.currency + reward;
+            };
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(b&quot;Victory!&quot;));
+            try_level_up(attacker);
+            true
+        } else {
+            if (attacker.currency &gt;= 5) {
+                attacker.currency = attacker.currency - 5;
+                defender.currency = defender.currency + 5;
+            };
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(b&quot;Defeat in combat.&quot;));
+            false
+        }
+    }
+
+    // Trade an item from one character to another.
+    public entry fun trade_item(ctx: TxContext, from: &amp;mut Character, to: &amp;mut Character, item_index: u64) {
+        let addr = ctx.sender;
+        assert_character_owner(from, addr);
+        let len = vector::length(&amp;from.inventory);
+        if (item_index &gt;= len) {
+            abort EINVALID_ITEM_INDEX;
+        };
+        let item = vector::remove(&amp;mut from.inventory, item_index);
+        vector::push_back(&amp;mut to.inventory, item);
+    }
+
+    // Exchange in-game currency between two characters.
+    public entry fun exchange_currency(ctx: TxContext, from: &amp;mut Character, to: &amp;mut Character, amount: u64) {
+        let addr = ctx.sender;
+        assert_character_owner(from, addr);
+        if (from.currency &lt; amount) {
+            abort EINSUFFICIENT_CURRENCY;
+        };
+        from.currency = from.currency - amount;
+        to.currency = to.currency + amount;
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration4" class="tabcontent">
+                    <h3>Contract Source - Iteration 4</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 4</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:14
+  │
+5 │     use std::vector;
+  │              ^^^^^^ Unnecessary alias &#039;vector&#039; for module &#039;std::vector&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:8:26
+  │
+8 │     use sui::tx_context::TxContext;
+  │                          ^^^^^^^^^ Unnecessary alias &#039;TxContext&#039; for module member &#039;sui::tx_context::TxContext&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:9:22
+  │
+9 │     use sui::object::UID;
+  │                      ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:102:12
+    │
+ 43 │     public struct Character has key, store {
+    │                   --------- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+    ·
+102 │     public entry fun create_character(ctx: TxContext, seed: u64): Character {
+    │            ^^^^^                                                  --------- The type &#039;0x0::my_module::Character&#039; does not have the ability &#039;drop&#039;
+    │            │                                                       
+    │            Invalid return type for entry function &#039;create_character&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:102:39
+    │
+102 │     public entry fun create_character(ctx: TxContext, seed: u64): Character {
+    │            -----                      ^^^  --------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                          │     
+    │            │                          Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;create_character&#039; was declared &#039;entry&#039; here
+
+error[E04001]: restricted visibility
+    ┌─ ./sources/temp_contract.move:104:20
+    │
+104 │         let addr = ctx.sender; // Assume TxContext has a field &#039;sender&#039; of type address.
+    │                    ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:105:18
+    │
+105 │         let id = UID::new(&amp;mut ctx);
+    │                  ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:125:12
+    │
+ 36 │     public struct GameItem has key, store {
+    │                   -------- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+    ·
+125 │     public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {
+    │            ^^^^^                                                                          -------- The type &#039;0x0::my_module::GameItem&#039; does not have the ability &#039;drop&#039;
+    │            │                                                                               
+    │            Invalid return type for entry function &#039;create_item&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:125:34
+    │
+125 │     public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {
+    │            -----                 ^^^  --------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                     │     
+    │            │                     Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;create_item&#039; was declared &#039;entry&#039; here
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:125:50
+    │
+125 │     public entry fun create_item(ctx: TxContext, rarity: Rarity, effect: string::String): GameItem {
+    │            -----                                 ^^^^^^  ------ &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                                     │        
+    │            │                                     Invalid &#039;entry&#039; parameter type for parameter &#039;rarity&#039;
+    │            &#039;create_item&#039; was declared &#039;entry&#039; here
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:127:18
+    │
+127 │         let id = UID::new(&amp;mut ctx);
+    │                  ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:136:44
+    │
+136 │     public entry fun add_item_to_character(ctx: TxContext, ch: &amp;mut Character, item: GameItem) {
+    │            -----                           ^^^  --------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                               │     
+    │            │                               Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;add_item_to_character&#039; was declared &#039;entry&#039; here
+
+error[E04001]: restricted visibility
+    ┌─ ./sources/temp_contract.move:137:20
+    │
+137 │         let addr = ctx.sender; // TxContext passed by value is immutable; its fields can be copied.
+    │                    ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:144:29
+    │
+144 │     public entry fun combat(ctx: TxContext, attacker: &amp;mut Character, defender: &amp;mut Character, seed: u64): bool {
+    │            -----            ^^^  --------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                │     
+    │            │                Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;combat&#039; was declared &#039;entry&#039; here
+
+error[E04001]: restricted visibility
+    ┌─ ./sources/temp_contract.move:145:20
+    │
+145 │         let addr = ctx.sender;
+    │                    ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:176:33
+    │
+176 │     public entry fun trade_item(ctx: TxContext, from: &amp;mut Character, to: &amp;mut Character, item_index: u64) {
+    │            -----                ^^^  --------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                    │     
+    │            │                    Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;trade_item&#039; was declared &#039;entry&#039; here
+
+error[E04001]: restricted visibility
+    ┌─ ./sources/temp_contract.move:177:20
+    │
+177 │         let addr = ctx.sender;
+    │                    ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:188:40
+    │
+188 │     public entry fun exchange_currency(ctx: TxContext, from: &amp;mut Character, to: &amp;mut Character, amount: u64) {
+    │            -----                       ^^^  --------- &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                           │     
+    │            │                           Invalid &#039;entry&#039; parameter type for parameter &#039;ctx&#039;
+    │            &#039;exchange_currency&#039; was declared &#039;entry&#039; here
+
+error[E04001]: restricted visibility
+    ┌─ ./sources/temp_contract.move:189:20
+    │
+189 │         let addr = ctx.sender;
+    │                    ^^^^^^^^^^ Invalid access of field &#039;sender&#039; on the struct &#039;sui::tx_context::TxContext&#039;. The field &#039;sender&#039; can only be accessed within the module &#039;sui::tx_context&#039; since it defines &#039;TxContext&#039;
+
+
+[bold]Delta Changes:[/bold] Errors: [red]-17[/red] | Compiler Warnings: [yellow]+0[/yellow] | Linter Warnings: [blue]+0[/blue]
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module 0x0::my_module {
+
+    // Import standard modules.
+    use std::string;
+    use std::vector;
+
+    // Import Sui modules.
+    use sui::signer;
+    use sui::object::{UID, move_to};
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ERROR CODES
+    ////////////////////////////////////////////////////////////////////////////
+    const ENOT_CHARACTER_OWNER: u64 = 1;
+    const EINSUFFICIENT_CURRENCY: u64 = 2;
+    const EINVALID_ITEM_INDEX: u64 = 3;
+    const EPARTICIPANT_SELF: u64 = 4;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ENUMERATIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Enum for item rarity. Must be storable.
+    public enum Rarity has copy, drop, store {
+        COMMON,
+        RARE,
+        EPIC,
+        LEGENDARY
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RESOURCE DEFINITIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // GameItem represents an in-game item.
+    // For Sui objects, the first field must be a UID.
+    public struct GameItem has key, store {
+        id: UID,
+        rarity: Rarity,
+        effect: string::String
+    }
+
+    // Character represents a player’s character.
+    // The &#039;id&#039; field must be first and of type UID.
+    public struct Character has key, store {
+        id: UID,
+        owner: address,                        // Owner of the character.
+        strength: u64,                         // Physical power.
+        agility: u64,                          // Speed and evasiveness.
+        intelligence: u64,                     // Magical or analytical abilities.
+        level: u64,                            // Current level.
+        experience: u64,                       // Current experience points.
+        achievements: vector&lt;string::String&gt;,  // Achievement logs.
+        inventory: vector&lt;GameItem&gt;,           // Items owned by the character.
+        currency: u64                          // In-game currency balance.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HELPER FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // A simple linear congruential generator (LCG) for pseudo‐random number generation.
+    // NOTE: This method is not cryptographically secure. In production, use a verifiable random function.
+    fun secure_random(seed: u64): u64 {
+        let a = 6364136223846793005;
+        let c = 1;
+        seed * a + c
+    }
+
+    // Generate a random number in the range [0, max).
+    fun random_in_range(seed: u64, max: u64): u64 {
+        let rnd = secure_random(seed);
+        rnd % max
+    }
+
+    // Ensure that the given sender is the owner of the character.
+    fun assert_character_owner(ch: &amp;Character, sender: address) {
+        if (ch.owner != sender) {
+            abort ENOT_CHARACTER_OWNER;
+        }
+    }
+
+    // Level up the character if its experience meets the threshold.
+    fun try_level_up(ch: &amp;mut Character) {
+        // Level-up threshold: current_level * 100.
+        while (ch.experience &gt;= ch.level * 100) {
+            ch.experience = ch.experience - ch.level * 100;
+            ch.level = ch.level + 1;
+            // Increase attributes upon level-up.
+            ch.strength = ch.strength + 2;
+            ch.agility = ch.agility + 2;
+            ch.intelligence = ch.intelligence + 2;
+            // Record the level-up achievement.
+            vector::push_back(&amp;mut ch.achievements, string::utf8(b&quot;Level Up&quot;));
+        };
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // PUBLIC ENTRY FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Create a new character.
+    // The character is stored (moved) into the sender’s account and its UID is returned.
+    public entry fun create_character(sender: &amp;signer, seed: u64): UID {
+        let addr = signer::address_of(sender);
+        let id = UID::new(sender);
+        // Generate base attributes in the range [10, 20].
+        let strength = 10 + random_in_range(seed, 11);
+        let agility = 10 + random_in_range(seed + 1, 11);
+        let intelligence = 10 + random_in_range(seed + 2, 11);
+        let character = Character {
+            id,
+            owner: addr,
+            strength,
+            agility,
+            intelligence,
+            level: 1,
+            experience: 0,
+            achievements: vector::empty(),
+            inventory: vector::empty(),
+            currency: 100  // Starting currency.
+        };
+        // Publish the character into the sender&#039;s account.
+        move_to(sender, character);
+        id
+    }
+
+    // Create a new game item.
+    // The created item&#039;s UID is returned and the item is moved to the sender’s account.
+    public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): UID {
+        let id = UID::new(sender);
+        let item = GameItem {
+            id,
+            rarity,
+            effect
+        };
+        move_to(sender, item);
+        id
+    }
+
+    // Add an item to the sender&#039;s character inventory.
+    public entry fun add_item_to_character(sender: &amp;signer, ch: &amp;mut Character, item: GameItem) {
+        let addr = signer::address_of(sender);
+        // Verify ownership.
+        assert_character_owner(ch, addr);
+        vector::push_back(&amp;mut ch.inventory, item);
+    }
+
+    // Simulate combat between two distinct characters.
+    // On victory, the attacker gains experience and a portion of the defender&#039;s currency.
+    public entry fun combat(sender: &amp;signer, attacker: &amp;mut Character, defender: &amp;mut Character, seed: u64): bool {
+        let addr = signer::address_of(sender);
+        // Ensure the sender owns the attacker.
+        assert_character_owner(attacker, addr);
+        // Prevent self-combat.
+        if (attacker.owner == defender.owner) {
+            abort EPARTICIPANT_SELF;
+        };
+        // Compute attack and defense powers.
+        let attack_bonus = random_in_range(seed, attacker.strength + 1);
+        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;
+        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);
+        let defense_power = defender.agility + defense_bonus + defender.level * 2;
+        if (attack_power &gt; defense_power) {
+            // Attacker wins.
+            let exp_gain = (attack_power - defense_power) + 10;
+            attacker.experience = attacker.experience + exp_gain;
+            // Reward: transfer 10% of defender&#039;s currency.
+            let reward = defender.currency / 10;
+            if (defender.currency &gt;= reward) {
+                defender.currency = defender.currency - reward;
+                attacker.currency = attacker.currency + reward;
+            };
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(b&quot;Victory!&quot;));
+            try_level_up(attacker);
+            true
+        } else {
+            // Defender wins; apply penalty to attacker.
+            if (attacker.currency &gt;= 5) {
+                attacker.currency = attacker.currency - 5;
+                defender.currency = defender.currency + 5;
+            };
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(b&quot;Defeat in combat.&quot;));
+            false
+        }
+    }
+
+    // Trade an item from one character to another.
+    public entry fun trade_item(sender: &amp;signer, from: &amp;mut Character, to: &amp;mut Character, item_index: u64) {
+        let addr = signer::address_of(sender);
+        // Verify sender&#039;s ownership of the &#039;from&#039; character.
+        assert_character_owner(from, addr);
+        let len = vector::length(&amp;from.inventory);
+        if (item_index &gt;= len) {
+            abort EINVALID_ITEM_INDEX;
+        };
+        let item = vector::remove(&amp;mut from.inventory, item_index);
+        vector::push_back(&amp;mut to.inventory, item);
+    }
+
+    // Exchange in-game currency between characters.
+    public entry fun exchange_currency(sender: &amp;signer, from: &amp;mut Character, to: &amp;mut Character, amount: u64) {
+        let addr = signer::address_of(sender);
+        // Verify sender&#039;s ownership.
+        assert_character_owner(from, addr);
+        if (from.currency &lt; amount) {
+            abort EINSUFFICIENT_CURRENCY;
+        };
+        from.currency = from.currency - amount;
+        to.currency = to.currency + amount;
+    }
+}</code></pre>
+                </div>
+                
+                <div id="Iteration5" class="tabcontent">
+                    <h3>Contract Source - Iteration 5</h3>
+                
+                    <div class="iteration-prompt" style="margin-bottom: 20px;">
+                        <h4>Prompt for Iteration 5</h4>
+                        <div class="prompt-console" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                            <div class="console-header" style="background-color: #F1F5F9; padding: 8px 12px; border-bottom: 1px solid #CBD5E1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #EF4444; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #F59E0B; margin-right: 6px;"></div>
+                                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; margin-right: 6px;"></div>
+                                    <span style="color: #334155; font-family: 'Arial', sans-serif; font-size: 12px;">Prompt</span>
+                                </div>
+                            </div>
+                            <div class="console-body" style="background-color: #F1F5F9; padding: 12px; max-height: 200px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; color: #334155; font-family: 'Courier New', monospace; font-size: 12px;">The previous contract had compilation errors. Here is the compiler feedback:
+
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING TempContract
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:5:14
+  │
+5 │     use std::vector;
+  │              ^^^^^^ Unnecessary alias &#039;vector&#039; for module &#039;std::vector&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03002]: unbound module
+  ┌─ ./sources/temp_contract.move:8:9
+  │
+8 │     use sui::signer;
+  │         ^^^^^^^^^^^ Invalid &#039;use&#039;. Unbound module: &#039;sui::signer&#039;
+
+warning[W02021]: duplicate alias
+  ┌─ ./sources/temp_contract.move:9:23
+  │
+9 │     use sui::object::{UID, move_to};
+  │                       ^^^ Unnecessary alias &#039;UID&#039; for module member &#039;sui::object::UID&#039;. This alias is provided by default
+  │
+  = This warning can be suppressed with &#039;#[allow(duplicate_alias)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03003]: unbound module member
+  ┌─ ./sources/temp_contract.move:9:28
+  │
+9 │     use sui::object::{UID, move_to};
+  │                            ^^^^^^^ Invalid &#039;use&#039;. Unbound member &#039;move_to&#039; in module &#039;sui::object&#039;
+  │
+  ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13
+  │
+5 │ module sui::object;
+  │             ------ Module &#039;sui::object&#039; declared here
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:104:12
+    │
+104 │     public entry fun create_character(sender: &amp;signer, seed: u64): UID {
+    │            ^^^^^                                                   --- The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+    │            │                                                        
+    │            Invalid return type for entry function &#039;create_character&#039;
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:105:20
+    │
+105 │         let addr = signer::address_of(sender);
+    │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:106:18
+    │
+106 │         let id = UID::new(sender);
+    │                  ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[E03005]: unbound unscoped name
+    ┌─ ./sources/temp_contract.move:124:9
+    │
+124 │         move_to(sender, character);
+    │         ^^^^^^^ Unbound function &#039;move_to&#039; in current scope
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:130:12
+    │
+130 │     public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): UID {
+    │            ^^^^^                                                                           --- The type &#039;sui::object::UID&#039; does not have the ability &#039;drop&#039;
+    │            │                                                                                
+    │            Invalid return type for entry function &#039;create_item&#039;
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- To satisfy the constraint, the &#039;drop&#039; ability would need to be added here
+
+error[Sui E02002]: invalid &#039;entry&#039; function signature
+    ┌─ ./sources/temp_contract.move:130:51
+    │
+130 │     public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): UID {
+    │            -----                                  ^^^^^^  ------ &#039;entry&#039; parameters must be primitives (by-value), vectors of primitives, objects (by-reference or by-value), vectors of objects, or &#039;Receiving&#039; arguments (by-reference or by-value)
+    │            │                                      │        
+    │            │                                      Invalid &#039;entry&#039; parameter type for parameter &#039;rarity&#039;
+    │            &#039;create_item&#039; was declared &#039;entry&#039; here
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:131:18
+    │
+131 │         let id = UID::new(sender);
+    │                  ^^^ Invalid construction. Expected an enum
+    │
+    ┌─ /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15
+    │
+ 69 │ public struct UID has store {
+    │               --- But &#039;UID&#039; is an struct
+
+error[E03005]: unbound unscoped name
+    ┌─ ./sources/temp_contract.move:137:9
+    │
+137 │         move_to(sender, item);
+    │         ^^^^^^^ Unbound function &#039;move_to&#039; in current scope
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:142:44
+    │
+142 │     public entry fun add_item_to_character(sender: &amp;signer, ch: &amp;mut Character, item: GameItem) {
+    │                                            ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:143:20
+    │
+143 │         let addr = signer::address_of(sender);
+    │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:151:29
+    │
+151 │     public entry fun combat(sender: &amp;signer, attacker: &amp;mut Character, defender: &amp;mut Character, seed: u64): bool {
+    │                             ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:152:20
+    │
+152 │         let addr = signer::address_of(sender);
+    │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:189:33
+    │
+189 │     public entry fun trade_item(sender: &amp;signer, from: &amp;mut Character, to: &amp;mut Character, item_index: u64) {
+    │                                 ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:190:20
+    │
+190 │         let addr = signer::address_of(sender);
+    │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+warning[W09002]: unused variable
+    ┌─ ./sources/temp_contract.move:202:40
+    │
+202 │     public entry fun exchange_currency(sender: &amp;signer, from: &amp;mut Character, to: &amp;mut Character, amount: u64) {
+    │                                        ^^^^^^ Unused parameter &#039;sender&#039;. Consider removing or prefixing with an underscore: &#039;_sender&#039;
+    │
+    = This warning can be suppressed with &#039;#[allow(unused_variable)]&#039; applied to the &#039;module&#039; or module member (&#039;const&#039;, &#039;fun&#039;, or &#039;struct&#039;)
+
+error[E03006]: unexpected name in this position
+    ┌─ ./sources/temp_contract.move:203:20
+    │
+203 │         let addr = signer::address_of(sender);
+    │                    ^^^^^^ Could not resolve the name &#039;signer&#039;
+
+
+[bold]Delta Changes:[/bold] Errors: [red]+1[/red] | Compiler Warnings: [yellow]+3[/yellow] | Linter Warnings: [blue]+0[/blue]
+
+Please revise the contract to resolve these issues.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <pre><code class="language-rust hljs">module 0x0::my_module {
+
+    // Import standard modules.
+    use std::string;
+    use std::vector;
+    use std::signer;
+
+    // Import Sui object module for UID.
+    use sui::object::UID;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ERROR CODES
+    ////////////////////////////////////////////////////////////////////////////
+    const ENOT_CHARACTER_OWNER: u64 = 1;
+    const EINSUFFICIENT_CURRENCY: u64 = 2;
+    const EINVALID_ITEM_INDEX: u64 = 3;
+    const EPARTICIPANT_SELF: u64 = 4;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ENUMERATIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Rarity for in-game items with required abilities.
+    public enum Rarity has copy, drop, store {
+        COMMON,
+        RARE,
+        EPIC,
+        LEGENDARY
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RESOURCE DEFINITIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // GameItem represents an in-game item.
+    // For Sui objects, the first field must be a UID.
+    public struct GameItem has key, store, drop {
+        id: UID,
+        rarity: Rarity,
+        effect: string::String
+    }
+
+    // Character represents a player&#039;s character.
+    public struct Character has key, store, drop {
+        id: UID,
+        owner: address,                        // Owner of the character.
+        strength: u64,                         // Physical power.
+        agility: u64,                          // Speed and evasiveness.
+        intelligence: u64,                     // Magical/analytical ability.
+        level: u64,                            // Current level.
+        experience: u64,                       // Experience points.
+        achievements: vector&lt;string::String&gt;,  // Achievement logs.
+        inventory: vector&lt;GameItem&gt;,           // Owned items.
+        currency: u64                          // In-game currency.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HELPER FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Simple linear congruential generator (LCG) for pseudo-random number generation.
+    // NOTE: Not cryptographically secure; use a verifiable random function in production.
+    fun secure_random(seed: u64): u64 {
+        let a = 6364136223846793005;
+        let c = 1;
+        seed * a + c
+    }
+
+    // Returns a random number in the range [0, max).
+    fun random_in_range(seed: u64, max: u64): u64 {
+        let rnd = secure_random(seed);
+        rnd % max
+    }
+
+    // Asserts that the provided sender is the owner of the character.
+    fun assert_character_owner(ch: &amp;Character, sender: address) {
+        if (ch.owner != sender) {
+            abort ENOT_CHARACTER_OWNER;
+        }
+    }
+
+    // Attempts to level up the character if enough experience has been accumulated.
+    fun try_level_up(ch: &amp;mut Character) {
+        // Level-up threshold: current level * 100.
+        while (ch.experience &gt;= ch.level * 100) {
+            ch.experience = ch.experience - ch.level * 100;
+            ch.level = ch.level + 1;
+            // Increment attributes on level up.
+            ch.strength = ch.strength + 2;
+            ch.agility = ch.agility + 2;
+            ch.intelligence = ch.intelligence + 2;
+            // Record the level-up achievement.
+            vector::push_back(&amp;mut ch.achievements, string::utf8(b&quot;Level Up&quot;.to_vec()));
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // PUBLIC ENTRY FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Create a new character.
+    // The returned Character will be published to the sender&#039;s account.
+    public entry fun create_character(sender: &amp;signer, seed: u64): Character {
+        let addr = signer::address_of(sender);
+        let id = UID::new(sender);
+        // Generate base attributes between 10 and 20.
+        let strength = 10 + random_in_range(seed, 11);
+        let agility = 10 + random_in_range(seed + 1, 11);
+        let intelligence = 10 + random_in_range(seed + 2, 11);
+        Character {
+            id,
+            owner: addr,
+            strength,
+            agility,
+            intelligence,
+            level: 1,
+            experience: 0,
+            achievements: vector::empty(),
+            inventory: vector::empty(),
+            currency: 100
+        }
+    }
+
+    // Create a new game item.
+    // The returned GameItem will be published to the sender&#039;s account.
+    public entry fun create_item(sender: &amp;signer, rarity: Rarity, effect: string::String): GameItem {
+        let id = UID::new(sender);
+        GameItem {
+            id,
+            rarity,
+            effect
+        }
+    }
+
+    // Adds the given item to the character&#039;s inventory.
+    public entry fun add_item_to_character(sender: &amp;signer, ch: &amp;mut Character, item: GameItem) {
+        let addr = signer::address_of(sender);
+        // Ensure sender owns the character.
+        assert_character_owner(ch, addr);
+        vector::push_back(&amp;mut ch.inventory, item);
+    }
+
+    // Simulate combat between two characters.
+    // Attacker wins if its computed attack power exceeds defender&#039;s defense power.
+    public entry fun combat(sender: &amp;signer, attacker: &amp;mut Character, defender: &amp;mut Character, seed: u64): bool {
+        let addr = signer::address_of(sender);
+        // Verify sender is owner of attacker.
+        assert_character_owner(attacker, addr);
+        // Prevent self-combat.
+        if (attacker.owner == defender.owner) {
+            abort EPARTICIPANT_SELF;
+        }
+        // Calculate attack power.
+        let attack_bonus = random_in_range(seed, attacker.strength + 1);
+        let attack_power = attacker.strength + attack_bonus + attacker.level * 2;
+        // Calculate defense power.
+        let defense_bonus = random_in_range(seed + 1, defender.agility + 1);
+        let defense_power = defender.agility + defense_bonus + defender.level * 2;
+        if (attack_power &gt; defense_power) {
+            // Attacker wins.
+            let exp_gain = (attack_power - defense_power) + 10;
+            attacker.experience = attacker.experience + exp_gain;
+            // Transfer 10% of defender&#039;s currency as reward.
+            let reward = defender.currency / 10;
+            if (defender.currency &gt;= reward) {
+                defender.currency = defender.currency - reward;
+                attacker.currency = attacker.currency + reward;
+            }
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(b&quot;Victory!&quot;.to_vec()));
+            try_level_up(attacker);
+            true
+        } else {
+            // Defender wins; apply penalty.
+            if (attacker.currency &gt;= 5) {
+                attacker.currency = attacker.currency - 5;
+                defender.currency = defender.currency + 5;
+            }
+            vector::push_back(&amp;mut attacker.achievements, string::utf8(b&quot;Defeat in combat.&quot;.to_vec()));
+            false
+        }
+    }
+
+    // Trade an item from one character&#039;s inventory to another&#039;s.
+    public entry fun trade_item(sender: &amp;signer, from: &amp;mut Character, to: &amp;mut Character, item_index: u64) {
+        let addr = signer::address_of(sender);
+        // Ensure sender owns the character transferring the item.
+        assert_character_owner(from, addr);
+        let len = vector::length(&amp;from.inventory);
+        if (item_index &gt;= len) {
+            abort EINVALID_ITEM_INDEX;
+        }
+        let item = vector::remove(&amp;mut from.inventory, item_index);
+        vector::push_back(&amp;mut to.inventory, item);
+    }
+
+    // Exchange currency between characters.
+    public entry fun exchange_currency(sender: &amp;signer, from: &amp;mut Character, to: &amp;mut Character, amount: u64) {
+        let addr = signer::address_of(sender);
+        // Verify sender owns the character sending currency.
+        assert_character_owner(from, addr);
+        if (from.currency &lt; amount) {
+            abort EINSUFFICIENT_CURRENCY;
+        }
+        from.currency = from.currency - amount;
+        to.currency = to.currency + amount;
+    }
+}</code></pre>
+                </div>
+                
+                <script>
+                    // Legacy function for backward compatibility
+                    function openTab(evt, tabName) {
+                        var i, tabcontent, tablinks;
+                        tabcontent = document.getElementsByClassName("tabcontent");
+                        for (i = 0; i < tabcontent.length; i++) {
+                            tabcontent[i].style.display = "none";
+                        }
+                        tablinks = document.getElementsByClassName("tablinks");
+                        for (i = 0; i < tablinks.length; i++) {
+                            tablinks[i].className = tablinks[i].className.replace(" active", "");
+                        }
+                        document.getElementById(tabName).style.display = "block";
+                        evt.currentTarget.className += " active";
+                    }
+
+                    // Tab handling functions
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // First, hide all tab contents
+                        var tabcontents = document.getElementsByClassName("tabcontent");
+                        for (var i = 0; i < tabcontents.length; i++) {
+                            tabcontents[i].style.display = "none";
+                        }
+                        
+                        // Show the default tab
+                        document.getElementById("ErrorChart").style.display = "block";
+                        
+                        // Setup click handlers for tabs
+                        var tabs = document.getElementById("tabs").getElementsByTagName("button");
+                        for (var i = 0; i < tabs.length; i++) {
+                            tabs[i].addEventListener("click", function() {
+                                // Remove active class from all tabs
+                                for (var j = 0; j < tabs.length; j++) {
+                                    tabs[j].className = tabs[j].className.replace(" active", "");
+                                }
+                                
+                                // Add active class to clicked tab
+                                this.className += " active";
+                                
+                                // Hide all tab contents
+                                for (var j = 0; j < tabcontents.length; j++) {
+                                    tabcontents[j].style.display = "none";
+                                }
+                                
+                                // Show the corresponding tab content
+                                var tabId = this.id.replace("Tab", "");
+                                document.getElementById(tabId).style.display = "block";
+                            });
+                        }
+                    });
+                    
+                    // Add line numbers to code blocks
+                    function addLineNumbers() {
+                        var codeBlocks = document.querySelectorAll('pre code');
+                        codeBlocks.forEach(function(codeBlock) {
+                            var lines = codeBlock.innerHTML.split('\n');
+                            var numbered = lines.map(function(line, i) {
+                                return '<span class="hljs-line-numbers">' + (i + 1) + '</span>' + line;
+                            }).join('\n');
+                            codeBlock.innerHTML = numbered;
+                        });
+                    }
+                    
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize syntax highlighting
+                        hljs.highlightAll();
+                        // Add line numbers after highlighting
+                        addLineNumbers();
+                        
+                        // Process code blocks in prompts
+                        processPromptCodeBlocks();
+                    });
+                    
+                    // Function to process code blocks in prompts
+                    function processPromptCodeBlocks() {
+                        // Find all prompt pre elements
+                        const promptPres = document.querySelectorAll('.console-body pre');
+                        
+                        promptPres.forEach(function(pre) {
+                            try {
+                                // Use a safer string-based approach instead of regex
+                                let content = pre.innerHTML;
+                                let processed = content;
+                                
+                                // Find the start positions of all code blocks
+                                const codeBlockStarts = [];
+                                let searchPos = 0;
+                                let foundPos;
+                                
+                                while ((foundPos = content.indexOf("```", searchPos)) !== -1) {
+                                    codeBlockStarts.push(foundPos);
+                                    searchPos = foundPos + 3;
+                                }
+                                
+                                // Process code blocks in reverse order to avoid position shifts
+                                if (codeBlockStarts.length >= 2 && codeBlockStarts.length % 2 === 0) {
+                                    for (let i = codeBlockStarts.length - 2; i >= 0; i -= 2) {
+                                        const blockStart = codeBlockStarts[i];
+                                        const blockEnd = codeBlockStarts[i + 1];
+                                        
+                                        // Extract the entire block including markers
+                                        const fullBlock = content.substring(blockStart, blockEnd + 3);
+                                        
+                                        // Extract language (if any)
+                                        let lang = 'plaintext';
+                                        const firstLineEnd = fullBlock.indexOf('');
+                                        if (firstLineEnd > 3) { // There's content after the opening ```
+                                            lang = fullBlock.substring(3, firstLineEnd).trim() || 'plaintext';
+                                        }
+                                        
+                                        // Extract code content (between the markers)
+                                        const codeStart = fullBlock.indexOf('') + 1;
+                                        const codeEnd = fullBlock.lastIndexOf("```");
+                                        const code = fullBlock.substring(codeStart, codeEnd);
+                                        
+                                        // Create the replacement HTML
+                                        const replacement = `<div class="prompt-code-block" style="margin: 10px 0; border-radius: 4px; overflow: hidden;">
+                                          <div style="padding: 6px 10px; background-color: rgba(0,0,0,0.2); font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">${lang}</div>
+                                          <pre style="margin: 0; padding: 10px;"><code class="language-${lang}">${code}</code></pre>
+                                        </div>`;
+                                        
+                                        // Replace the code block with the HTML
+                                        processed = processed.replace(fullBlock, replacement);
+                                    }
+                                }
+                                
+                                if (content !== processed) {
+                                    pre.innerHTML = processed;
+                                    // Apply highlighting to the newly created code blocks
+                                    pre.querySelectorAll('code').forEach(function(block) {
+                                        hljs.highlightElement(block);
+                                    });
+                                }
+                            } catch (error) {
+                                console.log("Error processing code blocks:", error);
+                            }
+                        });
+                    }
+                </script>
+        
+                <script>
+                    var figure = {"data":[{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(25.0, 90.0%, 50.0%)"},"name":"Error: unbound module","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE02003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,0,0,1,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(26.666666666666668, 89.16666666666667%, 50.833333333333336%)"},"name":"Error: unbound module member","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound module member\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE03003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[3,0,0,1,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(28.333333333333332, 88.33333333333333%, 51.666666666666664%)"},"name":"Error: unbound type","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE04003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound type\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e2.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE04003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE04003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE04003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE04003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(30.0, 87.5%, 52.5%)"},"name":"Error: unbound unscoped name","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunbound unscoped name\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e10.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE05003\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,0,2,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(31.666666666666664, 86.66666666666667%, 53.333333333333336%)"},"name":"Error: unexpected name in this position","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e13.9%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e19.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e10.5%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e35.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE06003\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected name in this position\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e28.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[5,7,2,7,7],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(33.333333333333336, 85.83333333333333%, 54.166666666666664%)"},"name":"Error: too few arguments","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE16004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE16004\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003etoo few arguments\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE16004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE16004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE16004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,3,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(35.0, 85.0%, 55.0%)"},"name":"Error: invalid method call","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE23004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE23004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE23004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE23004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eE23004\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eBlockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid method call\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e12.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,0,0,3],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(0.0, 90.0%, 50.0%)"},"name":"Non-blocking Error: invalid character","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid character\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e6\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e16.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid character\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e6\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e16.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[6,6,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(1.4285714285714284, 89.28571428571429%, 50.714285714285715%)"},"name":"Non-blocking Error: restricted visibility","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003erestricted visibility\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e26.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01004\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,0,5,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(2.8571428571428568, 88.57142857142857%, 51.42857142857143%)"},"name":"Non-blocking Error: ability constraint not satisfied","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN01005\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eability constraint not satisfied\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,2,0,0,2],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(4.285714285714286, 87.85714285714286%, 52.142857142857146%)"},"name":"Non-blocking Error: unexpected token","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected token\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected token\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e13.9%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunexpected token\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e5\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[3,5,0,0,5],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(5.7142857142857135, 87.14285714285714%, 52.857142857142854%)"},"name":"Non-blocking Error: invalid 'entry' function signature","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e7\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e19.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e9\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e47.4%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e15.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN02002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid 'entry' function signature\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e4.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[3,7,9,3,1],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(7.142857142857143, 86.42857142857143%, 53.57142857142857%)"},"name":"Non-blocking Error: invalid modifier","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid modifier\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN03001\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,2,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(8.571428571428571, 85.71428571428571%, 54.285714285714285%)"},"name":"Non-blocking Error: invalid object declaration","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid object declaration\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e5.6%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN07002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[2,0,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(10.0, 85.0%, 55.0%)"},"name":"Non-blocking Error: invalid attribute","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eNonblockingError\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003einvalid attribute\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e2.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eN15002\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[0,1,0,0,0],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(40.0, 75.0%, 45.0%)"},"name":"Warning: unused variable","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e6\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e16.7%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e0\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e20.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW02009\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eunused variable\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e4\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e16.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[6,0,0,4,4],"type":"bar"},{"hovertemplate":"%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"hsl(50.0, 70.0%, 50.0%)"},"name":"Warning: duplicate alias","text":["\u003cb\u003eIteration 1\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e1\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e2.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 2\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.3%\u003c\u002fb\u003e","\u003cb\u003eIteration 3\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e3\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e15.8%\u003c\u002fb\u003e","\u003cb\u003eIteration 4\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e10.0%\u003c\u002fb\u003e","\u003cb\u003eIteration 5\u003c\u002fb\u003e\u003cbr\u003eError code: \u003cb\u003eW21002\u003c\u002fb\u003e\u003cbr\u003eLevel: \u003cb\u003eWarning\u003c\u002fb\u003e\u003cbr\u003eMessage: \u003cb\u003eduplicate alias\u003c\u002fb\u003e\u003cbr\u003eCount: \u003cb\u003e2\u003c\u002fb\u003e\u003cbr\u003ePercentage: \u003cb\u003e8.0%\u003c\u002fb\u003e"],"x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[1,3,3,2,2],"type":"bar"},{"hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e\u003cbr\u003eTotal Errors: \u003cb\u003e%{y}\u003c\u002fb\u003e\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"red","dash":"solid","width":3},"marker":{"color":"darkred","size":10,"symbol":"diamond"},"mode":"lines+markers","name":"Total Errors","x":["Iteration 1","Iteration 2","Iteration 3","Iteration 4","Iteration 5"],"y":[36,36,19,20,25],"type":"scatter"}],"layout":{"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"annotations":[{"bgcolor":"rgba(245, 247, 250, 0.85)","bordercolor":"rgba(200, 200, 200, 0.5)","borderpad":10,"borderwidth":2,"font":{"color":"rgba(0, 0, 0, 0.2)","family":"Arial, sans-serif","size":14},"opacity":0.9,"showarrow":false,"text":"Sui Move Compiler Error Analysis","x":0.5,"xanchor":"right","xref":"paper","y":1.05,"yanchor":"top","yref":"paper"},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"0.0%","x":1,"y":36.0},{"arrowcolor":"#22C55E","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#22C55E","size":12},"showarrow":true,"text":"-47.2%","x":2,"y":27.5},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"5.3%","x":3,"y":19.5},{"arrowcolor":"#EF4444","arrowhead":2,"arrowsize":1,"arrowwidth":2,"ax":40,"ay":0,"font":{"color":"#EF4444","size":12},"showarrow":true,"text":"25.0%","x":4,"y":22.5},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"36","x":0,"y":37},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"36","x":1,"y":37},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"19","x":2,"y":20},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"20","x":3,"y":21},{"font":{"color":"#111827","size":14},"showarrow":false,"text":"25","x":4,"y":26}],"title":{"font":{"size":24,"family":"Arial, sans-serif","color":"#1E3A8A"},"text":"Evolution of Compiler Errors Across Iterations","y":0.95,"x":0.5,"xanchor":"center","yanchor":"top"},"xaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#333"},"text":"Iteration"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(0, 0, 0, 0.1)","tickangle":0},"yaxis":{"title":{"font":{"size":16,"family":"Arial, sans-serif","color":"#333"},"text":"Number of Errors"},"showgrid":true,"gridwidth":1,"gridcolor":"rgba(0, 0, 0, 0.1)"},"legend":{"title":{"font":{"size":14,"family":"Arial, sans-serif","color":"#333"},"text":"Error Types"},"bgcolor":"rgba(255, 255, 255, 0.5)","bordercolor":"rgba(0, 0, 0, 0.1)","borderwidth":1,"orientation":"v","yanchor":"middle","y":0.5,"xanchor":"left","x":1.02},"margin":{"t":100,"b":100,"l":100,"r":100},"font":{"family":"Arial, sans-serif","color":"#333"},"barmode":"stack","hovermode":"closest","height":800,"paper_bgcolor":"white","plot_bgcolor":"white"}};
+                    Plotly.newPlot('plotly-chart', figure.data, figure.layout, {
+                        displayModeBar: true,
+                        responsive: true,
+                        displaylogo: false,
+                        toImageButtonOptions: {
+                            format: 'png',
+                            filename: 'error_chart',
+                            height: 800,
+                            width: 1200,
+                            scale: 2
+                        }
+                    });
+                </script>
+            </div>
+        </body>
+        </html>
+        

@@ -150,8 +150,12 @@ def test_generate_contract(monkeypatch):
 
     prompt = "Generate a dummy contract"
     system_prompt = "System prompt dummy"
-    result = generate_contract(prompt, system_prompt)
+    result, history = generate_contract(prompt, system_prompt)
     assert result == "dummy contract generated"
+    assert len(history) == 3  # system, user, assistant messages
+    assert history[0]["role"] == "system"
+    assert history[1]["role"] == "user"
+    assert history[2]["role"] == "assistant"
 
 
 def test_iterative_evaluation(monkeypatch):
@@ -163,9 +167,13 @@ def test_iterative_evaluation(monkeypatch):
     # A counter to count compile_contract calls.
     call_counter = {"compile": 0}
 
-    def dummy_generate_contract(prompt: str, system_prompt: str) -> str:
-        # Always return the same dummy contract.
-        return "dummy contract"
+    def dummy_generate_contract(prompt: str, system_prompt: str, message_history: list = None) -> tuple[str, list]:
+        # Always return the same dummy contract and maintain history
+        if message_history is None:
+            message_history = [{"role": "system", "content": system_prompt}]
+        message_history.append({"role": "user", "content": prompt})
+        message_history.append({"role": "assistant", "content": "dummy contract"})
+        return "dummy contract", message_history
 
     def dummy_compile_contract(source: str) -> CompilationResult:
         call_counter["compile"] += 1

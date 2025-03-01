@@ -1,0 +1,150 @@
+{
+  "version": "1.0",
+  "created_at": "2025-02-26T21:55:00.011207",
+  "description": "Sui Move compiler error prediction dataset",
+  "examples": [
+    {
+      "input": "module 0x0::my_module {\n\n    // Import modules for UID generation, signing, and transaction context.\n    use sui::object::{self, UID};\n    use sui::tx_context::TxContext;\n    use std::signer;\n\n    ////////////////////////////////////////////////////////////////////////////\n    // DATA STRUCTURES\n    ////////////////////////////////////////////////////////////////////////////\n\n    // Metadata struct to hold NFT metadata.\n    // Using vector<u8> for string data to remain generic and efficient.\n    struct Metadata has copy, drop, store {\n        name: vector<u8>,\n        description: vector<u8>,\n        image_url: vector<u8>,\n    }\n\n    // NFT resource representing a unique token.\n    // The 'key' ability enables this resource to have a unique ID,\n    // while 'store' allows the object to be stored on-chain.\n    struct NFT has key, store {\n        id: UID,\n        metadata: Metadata,\n        // The 'owner' field tracks the current owner of the NFT.\n        owner: address,\n    }\n\n    // MinterCap resource for access control.\n    // Only accounts holding a MinterCap can mint new NFTs.\n    struct MinterCap has key, store {}\n\n    ////////////////////////////////////////////////////////////////////////////\n    // INITIALIZATION FUNCTION\n    ////////////////////////////////////////////////////////////////////////////\n\n    // init_module publishes a MinterCap resource into the caller's account.\n    // This function should be called once by the contract administrator.\n    public fun init_module(account: &signer) {\n        // Only publish a MinterCap if one is not already present.\n        if (!exists<MinterCap>(signer::address_of(account))) {\n            move_to(account, MinterCap {});\n        }\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // MINTING FUNCTIONALITY\n    ////////////////////////////////////////////////////////////////////////////\n\n    // mint_nft allows minting of a new NFT.\n    // Only accounts holding a MinterCap (hence authorized) can call this function.\n    // The newly minted NFT is automatically deposited in the minter's account.\n    public fun mint_nft(\n        minter: &signer,\n        ctx: &mut TxContext,\n        name: vector<u8>,\n        description: vector<u8>,\n        image_url: vector<u8>\n    ) {\n        // Verify that the caller has the minting capability.\n        assert!(exists<MinterCap>(signer::address_of(minter)), 100);\n\n        // Generate a new unique identifier for the NFT.\n        let new_uid = object::new_uid(ctx);\n\n        // Construct the metadata for the NFT.\n        let metadata = Metadata { name, description, image_url };\n\n        // Create the NFT with the owner set to the minter's address.\n        let nft = NFT { id: new_uid, metadata, owner: signer::address_of(minter) };\n\n        // Deposit the NFT into the minter's account.\n        move_to(minter, nft);\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // TRANSFER FUNCTIONALITY\n    ////////////////////////////////////////////////////////////////////////////\n\n    // transfer_nft transfers an NFT from its current owner to a new owner.\n    // This function takes ownership of the NFT resource from the caller and\n    // returns an updated NFT with its owner field changed to the recipient.\n    public fun transfer_nft(\n        owner: &signer,\n        nft: NFT,\n        recipient: address\n    ) : NFT {\n        // Ensure that only the owner can transfer the NFT.\n        assert!(nft.owner == signer::address_of(owner), 101);\n\n        // Update the NFT's owner to the recipient.\n        let new_nft = NFT { id: nft.id, metadata: nft.metadata, owner: recipient };\n\n        // Return the updated NFT.\n        new_nft\n    }\n\n    ////////////////////////////////////////////////////////////////////////////\n    // UPDATE METADATA FUNCTIONALITY\n    ////////////////////////////////////////////////////////////////////////////\n\n    // update_metadata allows the owner of an NFT to update its metadata.\n    // The function checks that the caller is the NFT's owner and then returns\n    // an updated NFT with new metadata.\n    public fun update_metadata(\n        owner: &signer,\n        nft: NFT,\n        new_name: vector<u8>,\n        new_description: vector<u8>,\n        new_image_url: vector<u8>\n    ) : NFT {\n        // Ensure that only the owner can update the metadata.\n        assert!(nft.owner == signer::address_of(owner), 102);\n\n        // Construct the updated metadata.\n        let new_metadata = Metadata { name: new_name, description: new_description, image_url: new_image_url };\n\n        // Create an updated NFT with the new metadata.\n        let updated_nft = NFT { id: nft.id, metadata: new_metadata, owner: nft.owner };\n\n        // Return the updated NFT.\n        updated_nft\n    }\n}",
+      "output": "UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git\nINCLUDING DEPENDENCY Sui\nINCLUDING DEPENDENCY MoveStdlib\nBUILDING TempContract\nerror[E03003]: unbound module member\n  \u250c\u2500 ./sources/temp_contract.move:4:23\n  \u2502\n4 \u2502     use sui::object::{self, UID};\n  \u2502                       ^^^^ Invalid 'use'. Unbound member 'self' in module 'sui::object'\n  \u2502\n  \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:5:13\n  \u2502\n5 \u2502 module sui::object;\n  \u2502             ------ Module 'sui::object' declared here\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:4:29\n  \u2502\n4 \u2502     use sui::object::{self, UID};\n  \u2502                             ^^^ Unnecessary alias 'UID' for module member 'sui::object::UID'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nwarning[W02021]: duplicate alias\n  \u250c\u2500 ./sources/temp_contract.move:5:26\n  \u2502\n5 \u2502     use sui::tx_context::TxContext;\n  \u2502                          ^^^^^^^^^ Unnecessary alias 'TxContext' for module member 'sui::tx_context::TxContext'. This alias is provided by default\n  \u2502\n  = This warning can be suppressed with '#[allow(duplicate_alias)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03002]: unbound module\n  \u250c\u2500 ./sources/temp_contract.move:6:9\n  \u2502\n6 \u2502     use std::signer;\n  \u2502         ^^^^^^^^^^^ Invalid 'use'. Unbound module: 'std::signer'\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:14:5\n   \u2502\n14 \u2502     struct Metadata has copy, drop, store {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:23:5\n   \u2502\n23 \u2502     struct NFT has key, store {\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[E01003]: invalid modifier\n   \u250c\u2500 ./sources/temp_contract.move:32:5\n   \u2502\n32 \u2502     struct MinterCap has key, store {}\n   \u2502     ^^^^^^ Invalid struct declaration. Internal struct declarations are not yet supported\n   \u2502\n   = Visibility annotations are required on struct declarations from the Move 2024 edition onwards.\n\nerror[Sui E02007]: invalid object declaration\n   \u250c\u2500 ./sources/temp_contract.move:32:12\n   \u2502\n32 \u2502     struct MinterCap has key, store {}\n   \u2502            ^^^^^^^^^     --- The 'key' ability is used to declare objects in Sui\n   \u2502            \u2502              \n   \u2502            Invalid object 'MinterCap'. Structs with the 'key' ability must have 'id: sui::object::UID' as their first field\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:42:14\n   \u2502\n42 \u2502         if (!exists<MinterCap>(signer::address_of(account))) {\n   \u2502              ^^^^^^ Unbound function 'exists' in current scope\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:42:32\n   \u2502\n42 \u2502         if (!exists<MinterCap>(signer::address_of(account))) {\n   \u2502                                ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:43:13\n   \u2502\n43 \u2502             move_to(account, MinterCap {});\n   \u2502             ^^^^^^^ Unbound function 'move_to' in current scope\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:62:17\n   \u2502\n62 \u2502         assert!(exists<MinterCap>(signer::address_of(minter)), 100);\n   \u2502                 ^^^^^^ Unbound function 'exists' in current scope\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:62:35\n   \u2502\n62 \u2502         assert!(exists<MinterCap>(signer::address_of(minter)), 100);\n   \u2502                                   ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03003]: unbound module member\n   \u250c\u2500 ./sources/temp_contract.move:65:23\n   \u2502\n65 \u2502         let new_uid = object::new_uid(ctx);\n   \u2502                       ^^^^^^^^^^^^^^^ Invalid module access. Unbound function 'new_uid' in module 'sui::object'\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:71:55\n   \u2502\n71 \u2502         let nft = NFT { id: new_uid, metadata, owner: signer::address_of(minter) };\n   \u2502                                                       ^^^^^^ Could not resolve the name 'signer'\n\nerror[E03005]: unbound unscoped name\n   \u250c\u2500 ./sources/temp_contract.move:74:9\n   \u2502\n74 \u2502         move_to(minter, nft);\n   \u2502         ^^^^^^^ Unbound function 'move_to' in current scope\n\nwarning[W09002]: unused variable\n   \u250c\u2500 ./sources/temp_contract.move:85:9\n   \u2502\n85 \u2502         owner: &signer,\n   \u2502         ^^^^^ Unused parameter 'owner'. Consider removing or prefixing with an underscore: '_owner'\n   \u2502\n   = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n   \u250c\u2500 ./sources/temp_contract.move:90:30\n   \u2502\n90 \u2502         assert!(nft.owner == signer::address_of(owner), 101);\n   \u2502                              ^^^^^^ Could not resolve the name 'signer'\n\nerror[E05001]: ability constraint not satisfied\n   \u250c\u2500 ./sources/temp_contract.move:93:33\n   \u2502\n24 \u2502         id: UID,\n   \u2502             --- The type 'sui::object::UID' does not have the ability 'copy'\n   \u00b7\n93 \u2502         let new_nft = NFT { id: nft.id, metadata: nft.metadata, owner: recipient };\n   \u2502                                 ^^^^^^ Invalid implicit copy of field 'id' without the 'copy' ability\n   \u2502\n   \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n   \u2502\n69 \u2502 public struct UID has store {\n   \u2502               --- To satisfy the constraint, the 'copy' ability would need to be added here\n\nwarning[W09002]: unused variable\n    \u250c\u2500 ./sources/temp_contract.move:107:9\n    \u2502\n107 \u2502         owner: &signer,\n    \u2502         ^^^^^ Unused parameter 'owner'. Consider removing or prefixing with an underscore: '_owner'\n    \u2502\n    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')\n\nerror[E03006]: unexpected name in this position\n    \u250c\u2500 ./sources/temp_contract.move:114:30\n    \u2502\n114 \u2502         assert!(nft.owner == signer::address_of(owner), 102);\n    \u2502                              ^^^^^^ Could not resolve the name 'signer'\n\nerror[E05001]: ability constraint not satisfied\n    \u250c\u2500 ./sources/temp_contract.move:120:37\n    \u2502\n 24 \u2502         id: UID,\n    \u2502             --- The type 'sui::object::UID' does not have the ability 'copy'\n    \u00b7\n120 \u2502         let updated_nft = NFT { id: nft.id, metadata: new_metadata, owner: nft.owner };\n    \u2502                                     ^^^^^^ Invalid implicit copy of field 'id' without the 'copy' ability\n    \u2502\n    \u250c\u2500 /Users/kz/.move/https___github_com_MystenLabs_sui_git_framework__testnet/crates/sui-framework/packages/sui-framework/sources/object.move:69:15\n    \u2502\n 69 \u2502 public struct UID has store {\n    \u2502               --- To satisfy the constraint, the 'copy' ability would need to be added here\n\n",
+      "metadata": {
+        "iteration": 1,
+        "timestamp": 1740635698.967401,
+        "error_stats": {
+          "errors": 22,
+          "compiler_warnings": 4,
+          "linter_warnings": 0
+        },
+        "error_codes": {
+          "E03003": {
+            "count": 2,
+            "message": "unbound module member",
+            "level": "BlockingError"
+          },
+          "W21002": {
+            "count": 2,
+            "message": "duplicate alias",
+            "level": "Warning"
+          },
+          "E02003": {
+            "count": 1,
+            "message": "unbound module",
+            "level": "BlockingError"
+          },
+          "N03001": {
+            "count": 3,
+            "message": "invalid modifier",
+            "level": "NonblockingError"
+          },
+          "N07002": {
+            "count": 1,
+            "message": "invalid object declaration",
+            "level": "NonblockingError"
+          },
+          "E05003": {
+            "count": 4,
+            "message": "unbound unscoped name",
+            "level": "BlockingError"
+          },
+          "E06003": {
+            "count": 5,
+            "message": "unexpected name in this position",
+            "level": "BlockingError"
+          },
+          "W02009": {
+            "count": 2,
+            "message": "unused variable",
+            "level": "Warning"
+          },
+          "N01005": {
+            "count": 2,
+            "message": "ability constraint not satisfied",
+            "level": "NonblockingError"
+          }
+        }
+      }
+    }
+  ],
+  "error_histogram": {
+    "E03003": [
+      2
+    ],
+    "W21002": [
+      2
+    ],
+    "E02003": [
+      1
+    ],
+    "N03001": [
+      3
+    ],
+    "N07002": [
+      1
+    ],
+    "E05003": [
+      4
+    ],
+    "E06003": [
+      5
+    ],
+    "W02009": [
+      2
+    ],
+    "N01005": [
+      2
+    ]
+  },
+  "iterations_data": [
+    {
+      "iteration": 1,
+      "total_errors": 22,
+      "error_breakdown": {
+        "E03003": {
+          "count": 2,
+          "message": "unbound module member",
+          "level": "BlockingError"
+        },
+        "W21002": {
+          "count": 2,
+          "message": "duplicate alias",
+          "level": "Warning"
+        },
+        "E02003": {
+          "count": 1,
+          "message": "unbound module",
+          "level": "BlockingError"
+        },
+        "N03001": {
+          "count": 3,
+          "message": "invalid modifier",
+          "level": "NonblockingError"
+        },
+        "N07002": {
+          "count": 1,
+          "message": "invalid object declaration",
+          "level": "NonblockingError"
+        },
+        "E05003": {
+          "count": 4,
+          "message": "unbound unscoped name",
+          "level": "BlockingError"
+        },
+        "E06003": {
+          "count": 5,
+          "message": "unexpected name in this position",
+          "level": "BlockingError"
+        },
+        "W02009": {
+          "count": 2,
+          "message": "unused variable",
+          "level": "Warning"
+        },
+        "N01005": {
+          "count": 2,
+          "message": "ability constraint not satisfied",
+          "level": "NonblockingError"
+        }
+      }
+    }
+  ],
+  "total_iterations": 1
+}
