@@ -19,8 +19,6 @@ services:
       - "/app/outputs"
       - "--generate-tests"
       - "--save-iterations"
-    ports:
-      - "3000:3000"
 
   neuromansui-server:
     build: .

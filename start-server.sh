@@ -2,8 +2,9 @@
 
 # Start the Next.js server
 echo "Starting Neuromansui Report Server..."
-cd neuromansui-server && npm run dev &
-SERVER_PID=$!
+cd neuromansui-server
+# Use -H 0.0.0.0 to make the server listen on all network interfaces
+npm run dev -- -H 0.0.0.0 -p 3000
 
 # Print usage information
 echo ""

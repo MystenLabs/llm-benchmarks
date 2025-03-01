@@ -51,6 +51,7 @@ COPY pyproject.toml poetry.lock* README.md /app/
 # Copy the application
 COPY neuromansui /app/neuromansui
 COPY neuromansui-server /app/neuromansui-server
+COPY test_outputs /app/test_outputs
 COPY prompts /app/prompts
 
 WORKDIR /app/neuromansui
@@ -79,7 +80,8 @@ COPY start-server.sh /app/
 RUN chmod +x /app/start-server.sh
 
 # Set the entry point
-ENTRYPOINT ["python3", "-m", "neuromansui.main"]
+WORKDIR /app
+ENTRYPOINT ["npm", "run", "dev"]
 
 # Default command
 CMD ["--help"]
