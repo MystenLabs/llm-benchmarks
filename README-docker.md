@@ -1,10 +1,10 @@
-# Neuromansui Docker & Kubernetes Setup
+# Gymnasuium Docker & Kubernetes Setup
 
-This documentation provides instructions for Dockerizing and deploying the Neuromansui application on Kubernetes.
+This documentation provides instructions for Dockerizing and deploying the Gymnasuium application on Kubernetes.
 
-## What is Neuromansui?
+## What is Gymnasuium?
 
-Neuromansui is a tool for compiling and iterative evaluation of Sui Move smart contracts using LLM-generated code. It uses OpenAI's API to generate and refine smart contracts, helping developers create robust Move code more efficiently.
+Gymnasuium is a tool for compiling and iterative evaluation of Sui Move smart contracts using LLM-generated code. It uses OpenAI's API to generate and refine smart contracts, helping developers create robust Move code more efficiently.
 
 ## Docker Containerization
 
@@ -20,7 +20,7 @@ Neuromansui is a tool for compiling and iterative evaluation of Sui Move smart c
 2. Build the Docker image:
 
 ```bash
-docker build -t neuromansui:latest .
+docker build -t gymnasuium:latest .
 ```
 
 3. Run the container locally:
@@ -29,7 +29,7 @@ docker build -t neuromansui:latest .
 docker run -it --rm \
   -e OPENAI_API_KEY=your_openai_api_key \
   -v "$(pwd)/outputs:/app/outputs" \
-  neuromansui:latest \
+  gymnasuium:latest \
   --prompt sui_move.base_contract \
   --save-dir /app/outputs \
   --generate-tests
@@ -67,7 +67,7 @@ kubectl apply -f k8s/deployment.yaml
 
 ## Configuration Options
 
-The Neuromansui CLI supports the following options:
+The Gymnasuium CLI supports the following options:
 
 - `--prompt NAMESPACE.NAME`: The prompt to use for generation (e.g., sui_move.base_contract)
 - `--module-name NAME`: Name of the module to generate
@@ -83,7 +83,7 @@ The Neuromansui CLI supports the following options:
 docker run -it --rm \
   -e OPENAI_API_KEY=your_openai_api_key \
   -v "$(pwd)/outputs:/app/outputs" \
-  neuromansui:latest \
+  gymnasuium:latest \
   --prompt sui_move.nft_contract \
   --module-name my_nft \
   --save-dir /app/outputs \

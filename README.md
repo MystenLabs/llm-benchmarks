@@ -25,8 +25,8 @@
 ### Clone the Repository:
 
 ```bash
-git clone https://github.com/MystenLabs/neuromansui.git
-cd neuromansui
+git clone https://github.com/MystenLabs/gymnasuium.git
+cd gymnasuium
 ```
 
 ### Create a Virtual Environment (Optional but Recommended):
@@ -60,7 +60,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 ### Command-Line Options
 
 ```
-usage: python -m neuromansui.main [-h] [--prompt PROMPT] [--list]
+usage: python -m gymnasuium.main [-h] [--prompt PROMPT] [--list]
                                  [--max-iterations MAX_ITERATIONS]
                                  [--output OUTPUT] [--save-dir SAVE_DIR]
                                  [--name NAME] [--generate-tests]
@@ -69,7 +69,7 @@ usage: python -m neuromansui.main [-h] [--prompt PROMPT] [--list]
                                  [--iterations-output ITERATIONS_OUTPUT]
                                  [--dark-mode]
 
-Neuromansui: LLM-powered Sui Move contract generator
+Gymnasuium: LLM-powered Sui Move contract generator
 
 options:
   -h, --help            show this help message and exit
@@ -93,32 +93,32 @@ options:
 
 List available prompts:
 ```bash
-python -m neuromansui.main --list
+python -m gymnasuium.main --list
 ```
 
 Generate a basic Sui Move contract:
 ```bash
-python -m neuromansui.main --prompt sui_move.base_contract
+python -m gymnasuium.main --prompt sui_move.base_contract
 ```
 
 Generate a contract and save it:
 ```bash
-python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts
+python -m gymnasuium.main --prompt sui_move.base_contract --save-dir my_contracts
 ```
 
 Generate a contract with a specific name:
 ```bash
-python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract
+python -m gymnasuium.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract
 ```
 
 Generate a contract and save iterations data for fine-tuning:
 ```bash
-python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations
+python -m gymnasuium.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations
 ```
 
 Generate a contract with test file and visualizations:
 ```bash
-python -m neuromansui.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations --generate-tests --dark-mode
+python -m gymnasuium.main --prompt sui_move.base_contract --save-dir my_contracts --name token_contract --save-iterations --generate-tests --dark-mode
 ```
 
 ### Using the Report Server
@@ -138,10 +138,10 @@ Using Docker Compose:
 
 ```bash
 # Run the standard generator
-docker-compose up neuromansui
+docker-compose up gymnasuium
 
 # Run the report server
-docker-compose up neuromansui-server
+docker-compose up gymnasuium-server
 ```
 
 ## Available Contract Templates
@@ -156,14 +156,14 @@ The following contract templates are available:
 ## Project Structure
 
 ```
-neuromansui/
+gymnasuium/
 ├── .env                   # Environment variables (e.g., OpenAI API key)
-├── neuromansui/           # Main package directory
+├── gymnasuium/           # Main package directory
 │   ├── main.py            # Main Python script implementing the evaluation pipeline
 │   └── prompt_loader.py   # Utility for loading prompts from YAML files
 ├── prompts/               # YAML files containing prompts for different contract types
 │   └── sui_move.yaml      # Sui Move contract prompts
-├── neuromansui-server/    # Next.js web server for viewing reports
+├── gymnasuium-server/    # Next.js web server for viewing reports
 ├── pyproject.toml         # Poetry configuration and dependencies
 ├── start-server.sh        # Script to start the report server
 ├── setup.sh               # Setup script for quick installation and testing

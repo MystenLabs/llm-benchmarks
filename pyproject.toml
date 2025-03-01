@@ -1,5 +1,5 @@
 [project]
-name = "neuromansui"
+name = "gymnasuium"
 version = "0.1.0"
 description = ""
 authors = [
@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-packages = [{ include = "neuromansui", from = "." }]
+packages = [{ include = "gymnasuium", from = "." }]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"

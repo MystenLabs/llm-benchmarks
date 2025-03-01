@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 
 # Import the functions and dataclasses from our main module.
-from neuromansui.main import (
+from gymnasuium.main import (
     compile_contract,
     generate_contract,
     iterative_evaluation,
@@ -109,8 +109,8 @@ def test_compile_contract_error(monkeypatch):
 
     # Replace the real functions with our mocks
     monkeypatch.setattr(subprocess, "run", fake_run)
-    monkeypatch.setattr("neuromansui.main.collect_errors", mock_collect_errors)
-    monkeypatch.setattr("neuromansui.main.strip_ansi", mock_strip_ansi)
+    monkeypatch.setattr("gymnasuium.main.collect_errors", mock_collect_errors)
+    monkeypatch.setattr("gymnasuium.main.strip_ansi", mock_strip_ansi)
 
     # Run the compile function
     dummy_source = "module Dummy {}"
@@ -196,8 +196,8 @@ def test_iterative_evaluation(monkeypatch):
                 stats={"errors": 0, "compiler_warnings": 0, "linter_warnings": 0},
             )
 
-    monkeypatch.setattr("neuromansui.main.generate_contract", dummy_generate_contract)
-    monkeypatch.setattr("neuromansui.main.compile_contract", dummy_compile_contract)
+    monkeypatch.setattr("gymnasuium.main.generate_contract", dummy_generate_contract)
+    monkeypatch.setattr("gymnasuium.main.compile_contract", dummy_compile_contract)
 
     base_prompt = "base prompt"
     system_prompt = "system prompt"
@@ -217,17 +217,17 @@ def test_main_dark_mode_visualization(monkeypatch):
         def get_prompt_description(self, *args, **kwargs):
             return "Test description"
     
-    monkeypatch.setattr('neuromansui.main.PromptLoader', lambda *args, **kwargs: MockPromptLoader())
+    monkeypatch.setattr('gymnasuium.main.PromptLoader', lambda *args, **kwargs: MockPromptLoader())
     
     # Mock iterative_evaluation
-    monkeypatch.setattr('neuromansui.main.iterative_evaluation', lambda *args, **kwargs: ("final contract", ["iteration data"]))
+    monkeypatch.setattr('gymnasuium.main.iterative_evaluation', lambda *args, **kwargs: ("final contract", ["iteration data"]))
     
     # Mock save_fine_tuning_data
     mock_save_data_calls = []
     def mock_save_fine_tuning_data(data, path, dark_mode=False):
         mock_save_data_calls.append({"data": data, "path": path, "dark_mode": dark_mode})
     
-    monkeypatch.setattr('neuromansui.main.save_fine_tuning_data', mock_save_fine_tuning_data)
+    monkeypatch.setattr('gymnasuium.main.save_fine_tuning_data', mock_save_fine_tuning_data)
     
     # Mock all file operations
     monkeypatch.setattr('os.path.exists', lambda path: False)
@@ -252,7 +252,7 @@ def test_main_dark_mode_visualization(monkeypatch):
     ])
     
     # Run main
-    from neuromansui.main import main
+    from gymnasuium.main import main
     main()
     
     # Check that save_fine_tuning_data was called with dark_mode=True

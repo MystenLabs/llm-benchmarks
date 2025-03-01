@@ -49,12 +49,12 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-6 md:p-12">
-      <h1 className="text-4xl font-bold mb-4">Neuromansui Report Server</h1>
+      <h1 className="text-4xl font-bold mb-4">Gymnasuium Report Server</h1>
       
       <div className="w-full max-w-4xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-8 shadow-sm">
-        <h2 className="text-xl font-semibold mb-3 text-blue-800">About Neuromansui</h2>
+        <h2 className="text-xl font-semibold mb-3 text-blue-800">About Gymnasuium</h2>
         <p className="mb-3 text-gray-700">
-          Neuromansui is an AI-powered "IDE Simulator" for developing and refining Sui Move smart contracts. It uses large language models (LLMs) to iteratively generate, compile, and improve contract code, mimicking real debugging cycles and measuring how well AI can reason about Move's unique semantics.
+          Gymnasuium is an AI-powered "IDE Simulator" for developing and refining Sui Move smart contracts. It uses large language models (LLMs) to iteratively generate, compile, and improve contract code, mimicking real debugging cycles and measuring how well AI can reason about Move's unique semantics.
         </p>
         <p className="mb-3 text-gray-700">
           By tracking error patterns across multiple refinement iterations, we gain insights beyond a simple "does it compile?" assessment. This helps identify recurring challenges with resource ownership, abilities, generics, and other Move-specific concepts that trip up both AI models and human developers.
@@ -99,7 +99,7 @@ export default function Home() {
       ) : Object.keys(reports).length === 0 ? (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded w-full max-w-4xl">
           <p className="font-bold">No reports found</p>
-          <p>No reports have been generated yet. Run neuromansui to generate reports.</p>
+          <p>No reports have been generated yet. Run gymnasuium to generate reports.</p>
         </div>
       ) : (
         <div className="w-full max-w-6xl">

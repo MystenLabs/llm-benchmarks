@@ -1,6 +1,6 @@
 # Deploying to Vercel
 
-This guide provides steps for deploying the Neuromansui application to Vercel.
+This guide provides steps for deploying the Gymnasuium application to Vercel.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ Before deploying, make sure the `public/test_outputs` directory contains all you
 
 ```bash
 # Copy test output files to the public directory (if not already done)
-cp -r test_outputs/* neuromansui-server/public/test_outputs/
+cp -r test_outputs/* gymnasuium-server/public/test_outputs/
 ```
 
 ## Deployment Steps
@@ -25,7 +25,7 @@ cp -r test_outputs/* neuromansui-server/public/test_outputs/
 3. Click "Add New" > "Project"
 4. Import your repository
 5. Configure the project:
-   - Select the `neuromansui-server` directory as the root directory
+   - Select the `gymnasuium-server` directory as the root directory
    - Vercel should automatically detect it's a Next.js application
 6. Set required environment variables:
    - Copy all values from your `.env` or `.env.local` file
@@ -35,7 +35,7 @@ cp -r test_outputs/* neuromansui-server/public/test_outputs/
 ### Option 2: Deploy Using Vercel CLI
 
 1. Install Vercel CLI if you haven't already: `npm i -g vercel`
-2. Navigate to the neuromansui-server directory: `cd neuromansui-server`
+2. Navigate to the gymnasuium-server directory: `cd gymnasuium-server`
 3. Login to Vercel: `vercel login`
 4. Deploy the application:
    - For production: `vercel --prod`

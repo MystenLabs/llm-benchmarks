@@ -1,5 +1,5 @@
 import textwrap
-from neuromansui.prompt_loader import collect_errors
+from gymnasuium.prompt_loader import collect_errors
 
 def test_collect_errors():
     sample_output = textwrap.dedent("""\

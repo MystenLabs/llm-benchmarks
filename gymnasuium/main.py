@@ -1,5 +1,5 @@
 """
-Main application module for Neuromansui.
+Main application module for Gymnasuium.
 
 This module provides functionality for compiling and iterative evaluation of 
 Sui Move smart contracts using LLM-generated code.
@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Optional, Dict, List
 from dotenv import load_dotenv
 import openai
-from neuromansui.prompt_loader import PromptLoader, collect_errors
+from gymnasuium.prompt_loader import PromptLoader, collect_errors
 import datetime
 
 # Import rich for pretty printing
@@ -1510,21 +1510,21 @@ def main():
     Main entry point for the application.
     """
     parser = argparse.ArgumentParser(
-        description="Neuromansui: LLM-powered Sui Move contract generator and refiner",
+        description="Gymnasuium: LLM-powered Sui Move contract generator and refiner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # List available prompts
-  python -m neuromansui.main --list
+  python -m gymnasuium.main --list
   
   # Generate a contract with default settings
-  python -m neuromansui.main --prompt sui_move.base_contract
+  python -m gymnasuium.main --prompt sui_move.base_contract
   
   # Generate a contract with custom settings and save outputs
-  python -m neuromansui.main --prompt sui_move.nft_contract --module-name my_nft --save-dir my_contracts --max-iterations 8 --dark-mode
+  python -m gymnasuium.main --prompt sui_move.nft_contract --module-name my_nft --save-dir my_contracts --max-iterations 8 --dark-mode
   
   # Generate a contract with tests and visualizations
-  python -m neuromansui.main --prompt sui_move.defi_contract --generate-tests --save-iterations --dark-mode
+  python -m gymnasuium.main --prompt sui_move.defi_contract --generate-tests --save-iterations --dark-mode
         """
     )
 
@@ -1543,7 +1543,7 @@ Examples:
     info_group.add_argument(
         "--version", 
         action="version", 
-        version="Neuromansui v0.1.0",
+        version="Gymnasuium v0.1.0",
         help="Show version information and exit"
     )
 
